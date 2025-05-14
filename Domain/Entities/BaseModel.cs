@@ -13,6 +13,6 @@ public class BaseModel
     
     [Column(TypeName = "smalldatetime")]
     public DateTime? DateModified { get; set; }
-    
+    public int? OrganizationId { get; set; }
     public bool? IsDeleted { get; set; }
 }

@@ -38,8 +38,6 @@ public class UserAccount : BaseModel
     
     public bool IsAccountActive { get; set; }
     
-    public int OrganizationId { get; set; }
-    
     [Required]
     public Enums.Role RoleId { get; set; }
 }
