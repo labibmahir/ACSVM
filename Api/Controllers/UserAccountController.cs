@@ -111,8 +111,7 @@ namespace Api.Controllers
         /// </summary>
         /// <returns>A list of user accounts.</returns>
         [HttpGet]
-        [Route(RouteConstants.ReadUserAccounts)]
-        [Authorize]
+        [Route(RouteConstants.ReadUserAccounts)] 
         public async Task<IActionResult> ReadUserAccount([FromQuery] UserAccountFilterDto userAccountFilterDto)
         {
             try
@@ -162,7 +161,15 @@ namespace Api.Controllers
                 if (key != userAccount.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
-                var userWithSameNRC = await context.UserAccountRepository.GetUserAccountByKey(key);
+                var userAccountWithSameUsername = await context.UserAccountRepository.GetUserAccountByUsername(userAccount.Username);
+
+                if (userAccountWithSameUsername != null && userAccountWithSameUsername.Oid != userAccount.Oid)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UsernameTaken);
+
+                var userAccountWithSameCellphone = await context.UserAccountRepository.GetUserAccountByCellphone(userAccount.CellPhone);
+
+                if (userAccountWithSameCellphone != null && userAccountWithSameCellphone.Oid != userAccount.Oid)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateCellphoneError);
 
 
                 var userInDb = await context.UserAccountRepository.GetUserAccountByKey(userAccount.Oid);
@@ -171,10 +178,10 @@ namespace Api.Controllers
                 userInDb.Surname = userAccount.Surname;
                 userInDb.CountryCode = userAccount.CountryCode;
                 userInDb.CellPhone = userAccount.CellPhone;
-                userInDb.DateModified = userAccount.DateModified;
+                userInDb.DateModified = DateTime.Now;
                 userInDb.ModifiedBy = userAccount.ModifiedBy;
                 userInDb.IsAccountActive = userAccount.IsAccountActive;
-                userAccount.OrganizationId = userAccount.OrganizationId;
+                userInDb.OrganizationId = userAccount.OrganizationId;
 
                 context.UserAccountRepository.Update(userInDb);
                 await context.SaveChangesAsync();
