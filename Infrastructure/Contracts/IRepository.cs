@@ -124,12 +124,41 @@ namespace Infrastructure.Contracts
         /// <param name="expressionList">load child table from the table.</param>
         Task<T> LoadWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] expressionList);
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="expressionList"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         Task<IEnumerable<T>> LoadListWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] expressionList);
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="skip"></param>
+        /// <param name="take"></param>
+        /// <param name="orderBy"></param>
+        /// <param name="expressionList"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         Task<IEnumerable<T>> LoadListWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, int skip, int take, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, params Expression<Func<T, object>>[] expressionList);
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="expressionList"></param>
+        /// <returns></returns>
         int Count(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] expressionList);
-
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;
     }
 }

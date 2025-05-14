@@ -1,12 +1,8 @@
 ﻿using Infrastructure.Contracts;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Infrastructure.Repositories
 {
@@ -257,6 +253,13 @@ namespace Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(predicate);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="expressionList"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public async Task<T> LoadWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] expressionList)
         {
             var query = context.Set<T>().AsQueryable();
@@ -269,6 +272,13 @@ namespace Infrastructure.Repositories
             return await query.FirstOrDefaultAsync(predicate);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="expressionList"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public async Task<IEnumerable<T>> LoadListWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] expressionList)
         {
             var query = context.Set<T>().AsQueryable();
@@ -280,6 +290,16 @@ namespace Infrastructure.Repositories
 
             return await query.Where(predicate).ToListAsync();
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="skip"></param>
+        /// <param name="take"></param>
+        /// <param name="orderBy"></param>
+        /// <param name="expressionList"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public async Task<IEnumerable<T>> LoadListWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, int skip, int take, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, params Expression<Func<T, object>>[] expressionList)
         {
             var query = context.Set<T>().AsQueryable();
@@ -294,6 +314,17 @@ namespace Infrastructure.Repositories
             return await query.Where(predicate).Skip(skip).Take(take).ToListAsync();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="groupByKeySelector"></param>
+        /// <param name="skip"></param>
+        /// <param name="take"></param>
+        /// <param name="orderBy"></param>
+        /// <param name="expressionList"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public async Task<IEnumerable<IGrouping<string, T>>> LoadGroupedListWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, Func<T, string> groupByKeySelector, int skip, int take, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, params Expression<Func<T, object>>[] expressionList)
         {
             var query = context.Set<T>().AsQueryable();
@@ -311,24 +342,12 @@ namespace Infrastructure.Repositories
             return await Task.Run(() => groupedQuery);
         }
 
-
-        //public async Task<IEnumerable<IGrouping<string, T>>> LoadGroupedListWithChildAsync<TEntity>(Expression<Func<T, bool>> predicate, Func<T, string> groupByKeySelector, int skip, int take, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, params Expression<Func<T, object>>[] expressionList)
-        //{
-        //    var query = context.Set<T>().AsQueryable();
-
-        //    foreach (var expression in expressionList)
-        //    {
-        //        query = query.Include(expression);
-        //    }
-
-        //    if (orderBy != null)
-        //        query = orderBy(query);
-
-        //    var groupedQuery = query.Where(predicate).GroupBy(groupByKeySelector).AsQueryable().Skip(skip).Take(take);
-
-        //    return await groupedQuery.ToListAsync();
-        //}
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="expressionList"></param>
+        /// <returns></returns>
         public int Count(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] expressionList)
         {
             foreach (var expression in expressionList)
@@ -337,9 +356,13 @@ namespace Infrastructure.Repositories
             }
 
             return context.Set<T>().Where(filter).Count();
-
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public virtual T GetById(Guid id)
         {
             try
@@ -354,6 +377,11 @@ namespace Infrastructure.Repositories
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Key"></param>
+        /// <returns></returns>
         public T GetById(int Key)
         {
             try
@@ -368,6 +396,11 @@ namespace Infrastructure.Repositories
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public async Task<T?> GetByIdAsync(Guid id)
         {
             var entity = await context.Set<T>().FindAsync(id);
@@ -375,11 +408,15 @@ namespace Infrastructure.Repositories
             {
                 return null;
             }
-
             context.Entry(entity).State = EntityState.Detached;
             return entity;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public async Task<T?> GetByIdAsync(int key)
         {
             var entity = await context.Set<T>().FindAsync(key);
@@ -392,10 +429,15 @@ namespace Infrastructure.Repositories
             return entity;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <returns></returns>
         public EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class
         {
             return context.Entry(entity);
         }
-
     }
 }

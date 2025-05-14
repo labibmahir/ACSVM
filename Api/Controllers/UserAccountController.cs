@@ -48,15 +48,10 @@ namespace Api.Controllers
         {
             try
             {
-
-
                 var userAccountWithSameUsername = await context.UserAccountRepository.GetUserAccountByUsername(userAccount.Username);
 
                 if (userAccountWithSameUsername != null)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UsernameTaken);
-
-                if (userAccount.CountryCode == "+260" && userAccount.CellPhone[0] == '0')
-                    userAccount.CellPhone = userAccount.CellPhone.Substring(1);
 
                 var userAccountWithSameCellphone = await context.UserAccountRepository.GetUserAccountByCellphone(userAccount.CellPhone);
 
@@ -268,8 +263,6 @@ namespace Api.Controllers
                     CountryCode = user.CountryCode,
                     CellPhone = user.CellPhone,
                     Username = user.Username,
-
-                    //   Token = encryptionHelpers.Encrypt($"{user.Oid}||{user.Username}||{DateTime.UtcNow}||MobileApp")
                     Token = GenerateJwtToken(user)
                 };
 

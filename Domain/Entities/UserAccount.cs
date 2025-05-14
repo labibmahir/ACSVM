@@ -41,5 +41,5 @@ public class UserAccount : BaseModel
     public int OrganizationId { get; set; }
     
     [Required]
-    public Role RoleId { get; set; }
+    public Enums.Role RoleId { get; set; }
 }
