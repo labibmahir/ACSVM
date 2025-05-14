@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Utilities;
+using Utilities.Constants;
 
 namespace Domain.Entities;
 
@@ -40,5 +41,5 @@ public class UserAccount : BaseModel
     public int OrganizationId { get; set; }
     
     [Required]
-    public Enums.Role RoleId { get; set; }
+    public Role RoleId { get; set; }
 }

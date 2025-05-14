@@ -1,0 +1,79 @@
+﻿using Infrastructure.Contracts;
+using Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Infrastructure
+{
+    /// <summary>
+    /// Implementation of IUnitOfWork.
+    /// </summary>
+    public class UnitOfWork : IUnitOfWork, IDisposable
+    {
+        protected readonly DataContext context;
+        protected readonly IConfiguration configuration;
+        private bool _disposed;
+
+        public UnitOfWork(DataContext context, IConfiguration configuration)
+        {
+            this.context = context;
+            this.configuration = configuration;
+        }
+
+        public async Task<int> SaveChangesAsync()
+        {
+            return await context.SaveChangesAsync();
+        }
+
+        //USER ACCOUNT
+        #region UserAccountRepository
+        private IUserAccountRepository userAccountRepository;
+        public IUserAccountRepository UserAccountRepository
+        {
+            get
+            {
+                if (userAccountRepository == null)
+                    userAccountRepository = new UserAccountRepository(context);
+
+                return userAccountRepository;
+            }
+        }
+        #endregion UserAccountRepository
+        
+        #region Entity LifeSpan
+        public IDbContextTransaction BeginTransaction()
+        {
+            return context.Database.BeginTransaction();
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await context.Database.BeginTransactionAsync();
+        }
+
+        protected void Dispose(bool disposing)
+        {
+            if (!this._disposed)
+            {
+                if (disposing)
+                {
+                    context.Dispose();
+                }
+            }
+
+            this._disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+    }
+}
