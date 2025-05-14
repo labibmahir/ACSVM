@@ -13,6 +13,7 @@ namespace Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DeviceController : ApiBaseController
     {
 
@@ -51,7 +52,7 @@ namespace Api.Controllers
                 var deviceWithSameIP = await context.DeviceRepository.GetDeviceByIP(device.DeviceIP);
 
                 if (deviceWithSameIP != null && deviceWithSameIP.OrganizationId == device.OrganizationId)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateCellphoneError);
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateIPError);
 
                 device.DateCreated = DateTime.Now;
                 device.IsDeleted = false;

@@ -21,5 +21,8 @@ namespace Infrastructure.Contracts
 
         //USER MODULE:
         IUserAccountRepository UserAccountRepository { get; }
+        IDeviceRepository DeviceRepository { get; }
+        IAccessLevelRepository AccessLevelRepository { get; }
+        IIdentifiedAssignDeviceRepository IdentifiedAssignDeviceRepository { get; }
     }
 }

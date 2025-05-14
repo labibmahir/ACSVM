@@ -111,7 +111,8 @@ namespace Api.Controllers
         /// </summary>
         /// <returns>A list of user accounts.</returns>
         [HttpGet]
-        [Route(RouteConstants.ReadUserAccounts)] 
+        [Route(RouteConstants.ReadUserAccounts)]
+        [Authorize]
         public async Task<IActionResult> ReadUserAccount([FromQuery] UserAccountFilterDto userAccountFilterDto)
         {
             try
@@ -153,7 +154,7 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateUserAccount)]
-        [AllowAnonymous]
+        [Authorize]
         public async Task<IActionResult> UpdateUserAccount(Guid key, UserAccount userAccount)
         {
             try
@@ -283,6 +284,7 @@ namespace Api.Controllers
 
         [HttpPut]
         [Route(RouteConstants.ChangedPassword)]
+        [Authorize]
         public async Task<IActionResult> ChangedPassword(Guid id, UpdatePasswordDto updatePasswordDto)
         {
             try

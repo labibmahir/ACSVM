@@ -28,5 +28,17 @@ namespace Utilities.Constants
         public const string ChangedPassword = "user-account/change-password";
 
         #endregion
+
+        #region Device
+        public const string CreateDevice = "device";
+
+        public const string ReadDevices = "devices";
+
+        public const string ReadDeviceByKey = "device/key/{key}";
+
+        public const string UpdateDevice = "device/{key}";
+
+        public const string DeleteDevice = "device/{key}";
+        #endregion
     }
 }

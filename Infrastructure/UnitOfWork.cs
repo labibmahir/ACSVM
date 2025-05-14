@@ -44,7 +44,49 @@ namespace Infrastructure
             }
         }
         #endregion UserAccountRepository
-        
+
+        #region DeviceRepository
+        private IDeviceRepository deviceRepository;
+        public IDeviceRepository DeviceRepository
+        {
+            get
+            {
+                if (deviceRepository == null)
+                    deviceRepository = new DeviceRepository(context);
+
+                return deviceRepository;
+            }
+        }
+        #endregion DeviceRepository
+
+        #region AccessLevelRepository
+        private IAccessLevelRepository accessLevelRepository;
+        public IAccessLevelRepository AccessLevelRepository
+        {
+            get
+            {
+                if (accessLevelRepository == null)
+                    accessLevelRepository = new AccessLevelRepository(context);
+
+                return accessLevelRepository;
+            }
+        }
+        #endregion AccessLevelRepository
+
+        #region IdentifiedAssignDeviceRepository
+        private IIdentifiedAssignDeviceRepository identifiedAssignDeviceRepository;
+        public IIdentifiedAssignDeviceRepository IdentifiedAssignDeviceRepository
+        {
+            get
+            {
+                if (identifiedAssignDeviceRepository == null)
+                    identifiedAssignDeviceRepository = new IdentifiedAssignDeviceRepository(context);
+
+                return identifiedAssignDeviceRepository;
+            }
+        }
+        #endregion IdentifiedAssignDeviceRepository
+
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()
         {

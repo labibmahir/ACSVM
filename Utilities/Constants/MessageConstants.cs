@@ -15,9 +15,12 @@ namespace Utilities.Constants
         public const string GenericError = "Something went wrong! Please try after sometime. If you are experiencing similar problem frequently, please report it to helpdesk.";
 
         public const string DuplicateCellphoneError = "The cellphone number is associated with another user account!";
+        public const string DuplicateIPError = "The IP Address is already in used!";
         //USER PROFILE REGISTRATION:
         public const string NoMatchFoundError = "No match found!";
         public const string UsernameTaken = "Username already exists!";
+        public const string DeviceNameTaken = "Device Name already exists!";
+        public const string DeviceCannotBeDeleted = "Device Cannot be deleted because its been assigned to some users!";
         public const string InvalidParameterError = "Invalid parameter(s)!";
         public const string UnauthorizedAttemptOfRecordUpdateError = "Unauthorized attempt of updating record!";
         public const string InvalidLogin = "Invalid username or password!";

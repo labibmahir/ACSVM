@@ -24,8 +24,6 @@ namespace Infrastructure.Repositories
         {
             try
             {
-                var user = new UserAccount();
-
                 return await LoadWithChildAsync<UserAccount>(u => u.Username.ToLower().Trim() == UserName.ToLower().Trim() && u.IsDeleted == false);
             }
             catch (Exception)
