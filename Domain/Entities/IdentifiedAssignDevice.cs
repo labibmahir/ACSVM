@@ -11,8 +11,12 @@ public class IdentifiedAssignDevice : BaseModel
     [Required]
     public int DeviceId { get; set; }
     
-    [Required]
-    public Guid PersonId { get; set; }
+    public Guid? PersonId { get; set; }
+    
+    public Guid? VisitorId { get; set; }
+    
+    [ForeignKey("VisitorId")]
+    public virtual Visitor Visitor { get; set; }
     
     [ForeignKey("PersonId")]
     public virtual Person Person { get; set; }

@@ -12,7 +12,6 @@ public class DataContext : DbContext
     }
     
     public DbSet<UserAccount> UserAccounts { get; set; }
-    
     public DbSet<Device> Devices { get; set; }
     
     public DbSet<AccessLevel> AccessLevels { get; set; }
@@ -28,4 +27,12 @@ public class DataContext : DbContext
     public DbSet<PersonImage> PeopleImages { get; set; }
     
     public DbSet<Person> Persons { get; set; }
+    
+    public DbSet<Appointment> Appointments { get; set; }
+    
+    public DbSet<IdentifiedAssignedAppointment> IdentifiedAssignedAppointments { get; set; }
+    
+    public DbSet <Slot> Slots { get; set; }
+    
+    public DbSet<Visitor> Visitors { get; set; }
 }

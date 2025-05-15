@@ -14,6 +14,13 @@ public class PersonImage : BaseModel
     [Required]
     public string ImageData { get; set; }
     
-    [ForeignKey("Oid")]
+    public Guid? PersonId { get; set; }
+    
+    public Guid? VisitorId { get; set; }
+    
+    [ForeignKey("VisitorId")]
+    public virtual Visitor Visitor { get; set; }
+    
+    [ForeignKey("PersonId")]
     public virtual Person Person { get; set; }
 }

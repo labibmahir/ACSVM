@@ -15,9 +15,13 @@ public class FingerPrint : BaseModel
     [Required]
     public Enums.FingerNumber FingerNumber { get; set; }
     
-    [Required]
-    public Guid PersonId { get; set; }
+    public Guid? PersonId { get; set; }
+    
+    public Guid? VisitorId { get; set; }
     
     [ForeignKey("PersonId")]
     public virtual Person Person { get; set; }
+    
+    [ForeignKey("VisitorId")]
+    public virtual Visitor Visitor { get; set; }
 }

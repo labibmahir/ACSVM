@@ -3,10 +3,8 @@ using Domain.Dto;
 using Domain.Entities;
 using Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Utilities.Constants;
-using Utilities.Encryptions;
 using System.Net.NetworkInformation;
 
 namespace Api.Controllers
@@ -57,10 +55,8 @@ namespace Api.Controllers
                 device.DateCreated = DateTime.Now;
                 device.IsDeleted = false;
                 device.CreatedBy = GetLoggedInUserId();
-
-
+                
                 context.DeviceRepository.Add(device);
-
                 await context.SaveChangesAsync();
 
                 return Ok(device);

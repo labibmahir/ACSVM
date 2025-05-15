@@ -9,8 +9,9 @@ public class IdentifiedAssignCard : BaseModel
     [Key]
     public Guid Oid { get; set; }
     
-    [Required]
-    public Guid PersonId { get; set; }
+    public Guid? PersonId { get; set; }
+    
+    public Guid? VisitorId { get; set; }
     
     [Required]
     public Guid CardId { get; set; }
@@ -18,11 +19,8 @@ public class IdentifiedAssignCard : BaseModel
     [Required]
     public bool IsPermanent { get; set; }
     
-    [Required]
-    public Enums.Status Status { get; set; }
-    
-    [Column(TypeName = "smalldatetime")]
-    public DateTime? ExpireDate { get; set; }
+    [ForeignKey("VisitorId")]
+    public virtual Visitor Visitor { get; set; }
     
     [ForeignKey("PersonId")]
     public virtual Person Person { get; set; }

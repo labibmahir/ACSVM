@@ -33,9 +33,6 @@ public class Person : BaseModel
     public bool IsDeviceAdministrator { get; set; }
     
     [Required]
-    public Enums.PersonType PersonType{ get; set; }
-    
-    [Required]
     [Column(TypeName = "smalldatetime")]
     public DateTime ValidateStartPeriod { get; set; }
     
@@ -52,4 +49,6 @@ public class Person : BaseModel
     public virtual IEnumerable<FingerPrint> FingerPrints { get; set; }
     
     public virtual IEnumerable<PersonImage> PeopleImages { get; set; }
+    
+    public virtual IEnumerable<IdentifiedAssignedAppointment> IdentifiedAssignedAppointments { get; set; }
 }
