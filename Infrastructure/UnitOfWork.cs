@@ -87,6 +87,20 @@ namespace Infrastructure
         }
         #endregion IdentifiedAssignDeviceRepository
 
+        #region PersonRepository
+        private IPersonRepository personRepository;
+        public IPersonRepository PersonRepository
+        {
+            get
+            {
+                if (personRepository == null)
+                    personRepository = new PersonRepository(context);
+
+                return personRepository;
+            }
+        }
+        #endregion IdentifiedAssignDeviceRepository
+
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()
         {

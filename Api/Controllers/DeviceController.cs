@@ -100,7 +100,7 @@ namespace Api.Controllers
         /// <summary>
         /// URL:api/devices
         /// </summary>
-        /// <returns>A list of user accounts.</returns>
+        /// <returns>A list of devices.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadDevices)]
         public async Task<IActionResult> ReadDevices([FromQuery] DeviceFilterDto deviceFilterDto)
@@ -187,7 +187,7 @@ namespace Api.Controllers
                 deviceInDb.IsDeleted = false;
                 deviceInDb.OrganizationId = device.OrganizationId;
                 deviceInDb.DateModified = DateTime.Now;
-                device.ModifiedBy = GetLoggedInUserId();
+                deviceInDb.ModifiedBy = GetLoggedInUserId();
 
                 context.DeviceRepository.Update(deviceInDb);
                 await context.SaveChangesAsync();

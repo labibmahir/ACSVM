@@ -40,5 +40,30 @@ namespace Utilities.Constants
 
         public const string DeleteDevice = "device/{key}";
         #endregion
+
+        #region AccessLevel
+        public const string CreateAccessLevel = "accesslevel";
+
+        public const string ReadAccessLevels = "accesslevels";
+
+        public const string ReadAccessLevelByKey = "accesslevel/key/{key}";
+
+        public const string UpdateAccessLevel = "accesslevel/{key}";
+
+        public const string DeleteAccessLevel = "accesslevel/{key}";
+        #endregion
+
+
+        #region Person
+        public const string CreatePerson = "person";
+
+        public const string ReadPersons = "persons";
+
+        public const string ReadPersonByKey = "person/key/{key}";
+
+        public const string UpdatePerson = "person/{key}";
+
+        public const string DeletePerson = "person/{key}";
+        #endregion
     }
 }

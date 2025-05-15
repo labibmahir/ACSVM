@@ -24,5 +24,6 @@ namespace Infrastructure.Contracts
         IDeviceRepository DeviceRepository { get; }
         IAccessLevelRepository AccessLevelRepository { get; }
         IIdentifiedAssignDeviceRepository IdentifiedAssignDeviceRepository { get; }
+        IPersonRepository PersonRepository { get; }
     }
 }
