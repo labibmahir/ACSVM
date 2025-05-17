@@ -37,6 +37,13 @@ namespace Infrastructure.Contracts
         /// </summary>
         /// <returns>Returns a list of all Devoces.</returns>
         public Task<IEnumerable<Device>> GetDevices();
+        /// <summary>
+        /// The method is used to get the list of Devices by AccessLevel.
+        /// </summary>
+        /// <returns>Returns a Devices of AccessLevel.</returns>
+        /// /// <param name="DeviceIP">IP of a Device.</param>
+        /// <returns>Returns a Device if the AccessLevelId is matched.</returns>
+        public Task<IEnumerable<Device>> GetDevicesByAccessLevel(int AccessLevelId);
         public Task<IEnumerable<Device>> GetDevices(DeviceFilterDto deviceFilterDto);
         public Task<int> GetDeviceCount(DeviceFilterDto deviceFilterDto);
     }

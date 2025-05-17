@@ -55,7 +55,7 @@ namespace Api.Controllers
                 device.DateCreated = DateTime.Now;
                 device.IsDeleted = false;
                 device.CreatedBy = GetLoggedInUserId();
-                
+
                 context.DeviceRepository.Add(device);
                 await context.SaveChangesAsync();
 
@@ -226,6 +226,7 @@ namespace Api.Controllers
 
                 devicetInDb.DateModified = DateTime.Now;
                 devicetInDb.IsDeleted = true;
+                devicetInDb.ModifiedBy = GetLoggedInUserId();
 
                 context.DeviceRepository.Update(devicetInDb);
                 await context.SaveChangesAsync();

@@ -9,5 +9,12 @@ namespace Infrastructure.Contracts
 {
     public interface IIdentifiedAssignDeviceRepository : IRepository<IdentifiedAssignDevice>
     {
+        /// <summary>
+        /// The method is used to get a IdentifiedAssignDevice by PersonId.
+        /// </summary>
+        /// <param name="PersonId">deviceName of a user.</param>
+        /// <returns>Returns a IdentifiedAssignDevice if the PersonId is matched.
+        public Task<IEnumerable<IdentifiedAssignDevice>> GetIdentifiedAssignDeviceByPerson(Guid PersonId);
+        public Task<IEnumerable<IdentifiedAssignDevice>> GetIdentifiedAssignDeviceByVisitor(Guid VisitorId);
     }
 }

@@ -65,5 +65,34 @@ namespace Utilities.Constants
 
         public const string DeletePerson = "person/{key}";
         #endregion
+
+        #region FingerPrint
+        public const string CreatePersonFingerPrint = "fingerprint-person";
+
+        public const string CreateVisitorFingerPrint = "fingerprint-visitor";
+
+        public const string ReadFingerPrints = "fingerprints";
+
+        public const string ReadFingerPrintByKey = "fingerprint/key/{key}";
+
+        public const string UpdateFingerPrint = "fingerprint/{key}";
+
+        public const string DeleteFingerPrint = "fingerprint/{key}";
+        #endregion
+
+        #region Card
+        public const string CreateCard = "card";
+
+        public const string AssignCardToPerson = "card-assign-person";
+        public const string AssignCardToVisitor = "card-assign-visitor";
+
+        public const string ReadCards = "cards";
+
+        public const string ReadCardByKey = "card/key/{key}";
+
+        public const string UpdateCard = "card/{key}";
+
+        public const string DeleteCard = "card/{key}";
+        #endregion
     }
 }

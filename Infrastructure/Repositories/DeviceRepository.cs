@@ -77,6 +77,19 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+
+        public async Task<IEnumerable<Device>> GetDevicesByAccessLevel(int AccessLevelId)
+        {
+            try
+            {
+                return await QueryAsync(x => x.IsDeleted == false && x.AccessLevelId == AccessLevelId);
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
         public async Task<IEnumerable<Device>> GetDevices(DeviceFilterDto deviceFilterDto)
         {
             try

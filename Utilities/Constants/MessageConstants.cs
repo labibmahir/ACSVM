@@ -16,13 +16,19 @@ namespace Utilities.Constants
 
         public const string DuplicateCellphoneError = "The cellphone number is associated with another user account!";
         public const string DuplicateIPError = "The IP Address is already in used!";
+        public const string DuplicateFingerError = "The FingerPrint is already added for this finger!";
         //USER PROFILE REGISTRATION:
         public const string NoMatchFoundError = "No match found!";
         public const string UsernameTaken = "Username already exists!";
         public const string DeviceNameTaken = "Device Name already exists!";
+        public const string PersonNumberTaken = "Person Number already exists!";
+        public const string CardNumberTake = "Card Number already exists!";
         public const string DeviceCannotBeDeleted = "Device Cannot be deleted because its been assigned to some users!";
+        public const string CardCannotBeDeleted = "Card Cannot be deleted because its been assigned to some users!";
         public const string InvalidParameterError = "Invalid parameter(s)!";
         public const string UnauthorizedAttemptOfRecordUpdateError = "Unauthorized attempt of updating record!";
+        public const string DeviceNotFoundAccessLevelError = "No device is assigned or deleted to your selected AccessLevel";
+        public const string DeviceNotActive = "Devices are currently not active";
         public const string InvalidLogin = "Invalid username or password!";
     }
 }

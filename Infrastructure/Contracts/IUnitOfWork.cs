@@ -25,5 +25,10 @@ namespace Infrastructure.Contracts
         IAccessLevelRepository AccessLevelRepository { get; }
         IIdentifiedAssignDeviceRepository IdentifiedAssignDeviceRepository { get; }
         IPersonRepository PersonRepository { get; }
+        IIdentifiedAssignCardRepository IdentifiedAssignCardRepository { get; }
+        IPersonImageRepository PersonImageRepository { get; }
+        IFingerPrintRepository FingerPrintRepository { get; }
+        ICardRepository CardRepository { get; }
+        IVisitorRepository VisitorRepository { get; }
     }
 }

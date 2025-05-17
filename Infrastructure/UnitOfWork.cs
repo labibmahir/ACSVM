@@ -101,6 +101,77 @@ namespace Infrastructure
         }
         #endregion IdentifiedAssignDeviceRepository
 
+        #region IdentifiedAssignCardRepository
+        private IIdentifiedAssignCardRepository identifiedAssignCardRepository;
+        public IIdentifiedAssignCardRepository IdentifiedAssignCardRepository
+        {
+            get
+            {
+                if (identifiedAssignCardRepository == null)
+                    identifiedAssignCardRepository = new IdentifiedAssignCardRepository(context);
+
+                return identifiedAssignCardRepository;
+            }
+        }
+        #endregion IdentifiedAssignDeviceRepository
+
+        #region PersonImageRepository
+        private IPersonImageRepository personImageRepository;
+        public IPersonImageRepository PersonImageRepository
+        {
+            get
+            {
+                if (personImageRepository == null)
+                    personImageRepository = new PersonImageRepository(context);
+
+                return personImageRepository;
+            }
+        }
+        #endregion IdentifiedAssignDeviceRepository
+
+
+        #region FingerPrintRepository
+        private IFingerPrintRepository fingerPrintRepository;
+        public IFingerPrintRepository FingerPrintRepository
+        {
+            get
+            {
+                if (fingerPrintRepository == null)
+                    fingerPrintRepository = new FingerPrintRepository(context);
+
+                return fingerPrintRepository;
+            }
+        }
+        #endregion IdentifiedAssignDeviceRepository
+
+        #region CardRepository
+        private ICardRepository cardRepository;
+        public ICardRepository CardRepository
+        {
+            get
+            {
+                if (cardRepository == null)
+                    cardRepository = new CardRepository(context);
+
+                return cardRepository;
+            }
+        }
+        #endregion IdentifiedAssignDeviceRepository
+
+        #region VisitorRepository
+        private IVisitorRepository visitorRepository;
+        public IVisitorRepository VisitorRepository
+        {
+            get
+            {
+                if (visitorRepository == null)
+                    visitorRepository = new VisitorRepository(context);
+
+                return visitorRepository;
+            }
+        }
+        #endregion IdentifiedAssignDeviceRepository
+
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()
         {

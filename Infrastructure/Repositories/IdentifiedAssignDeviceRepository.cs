@@ -13,5 +13,28 @@ namespace Infrastructure.Repositories
         public IdentifiedAssignDeviceRepository(DataContext context) : base(context)
         {
         }
+        public async Task<IEnumerable<IdentifiedAssignDevice>> GetIdentifiedAssignDeviceByPerson(Guid PersonId)
+        {
+            try
+            {
+                return await LoadListWithChildAsync<IdentifiedAssignDevice>(x => x.IsDeleted == false && x.PersonId == PersonId, d => d.Device);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        
+        public async Task<IEnumerable<IdentifiedAssignDevice>> GetIdentifiedAssignDeviceByVisitor(Guid VisitorId)
+        {
+            try
+            {
+                return await LoadListWithChildAsync<IdentifiedAssignDevice>(x => x.IsDeleted == false && x.VisitorId == VisitorId, d => d.Device);
+            }
+            catch
+            {
+                throw;
+            }
+        }
     }
 }

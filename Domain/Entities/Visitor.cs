@@ -12,7 +12,8 @@ public class Visitor : BaseModel
     
     [Required]
     public string LastName { get; set; }
-    
+    [MaxLength(50)]
+    public string VisitorNumber { get; set; }
     public string Email { get; set; }
     
     public string PhoneNumber { get; set; }
