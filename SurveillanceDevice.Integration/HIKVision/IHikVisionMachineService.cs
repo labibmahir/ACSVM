@@ -22,11 +22,18 @@ namespace SurveillanceDevice.Integration.HIKVision
 
         #region Fingerprint
         Task<(bool IsSuccess, string Message)> SetFingerprint(Device device, VMFingerPrintSetUpRequest fingerInfo);
+        Task<VMCaptureFingerPrintResponse> CaptureFingerPrint(Device device, VMCaptureFingerPrintRequest req);
 
+        Task<bool> DeleteFingerprint(Device device, EmployeeDetailDto request);
+        Task<bool> CheckFingerprintDeleteProcess(HttpClient _client);
         #endregion FingerPrint
 
         #region Cards
         Task<(bool Success, string Message)> AddCard(Device device, VMCardInfo card);
         #endregion Cards
+        #region Face
+        Task<(bool IsSuccess, string Message)> PostFaceRecordToLibrary(string ip, int port, string username, string password, FacePictureUploadDto faceRecordRequest, byte[] faceImage);
+        Task<(bool IsSuccess, string Message)> DeleteFaceRecordToLibrary(string ip, int port, string username, string password, FacePictureRemoveDto faceRecordRequest, byte[] faceImage);
+        #endregion Face
     }
 }

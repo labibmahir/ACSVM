@@ -16,9 +16,11 @@ namespace Utilities.Constants
 
         public const string DuplicateCellphoneError = "The cellphone number is associated with another user account!";
         public const string DuplicateIPError = "The IP Address is already in used!";
+        public const string InvalidDeviceId = "Please provide valid device Id;s";
         public const string DuplicateFingerError = "The FingerPrint is already added for this finger!";
         //USER PROFILE REGISTRATION:
         public const string NoMatchFoundError = "No match found!";
+        public const string NoImageFileProvided = "No match found!";
         public const string UsernameTaken = "Username already exists!";
         public const string DeviceNameTaken = "Device Name already exists!";
         public const string PersonNumberTaken = "Person Number already exists!";

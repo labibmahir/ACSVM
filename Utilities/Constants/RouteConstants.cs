@@ -67,6 +67,7 @@ namespace Utilities.Constants
         #endregion
 
         #region FingerPrint
+        public const string CaptureFingerPrints = "capturefingerprint";
         public const string CreatePersonFingerPrint = "fingerprint-person";
 
         public const string CreateVisitorFingerPrint = "fingerprint-visitor";
@@ -74,6 +75,9 @@ namespace Utilities.Constants
         public const string ReadFingerPrints = "fingerprints";
 
         public const string ReadFingerPrintByKey = "fingerprint/key/{key}";
+
+        public const string ReadFingerPrintByPerson = "fingerPrint/person/{PersonId}";
+        public const string ReadFingerPrintByVisitor = "fingerPrint/visitor/{VisitorId}";
 
         public const string UpdateFingerPrint = "fingerprint/{key}";
 
@@ -93,6 +97,23 @@ namespace Utilities.Constants
         public const string UpdateCard = "card/{key}";
 
         public const string DeleteCard = "card/{key}";
+        #endregion
+
+
+        #region FingerPrint
+        public const string CreatePersonImage = "person-image";
+
+        public const string CreateVisitorImage = "visitor-image";
+
+        public const string ReadPersonImages = "person-images";
+
+        public const string ReadPersonImageByKey = "person-image/key/{key}";
+        public const string ReadPersonImageByPersonId = "person-image/person/{PersonId}";
+        public const string ReadPersonImageByVisitorId = "person-image/visitor/{VisitorId}";
+
+        public const string UpdatePersonImage = "person-image/{key}";
+
+        public const string DeletePersonImage = "person-image/{key}";
         #endregion
     }
 }

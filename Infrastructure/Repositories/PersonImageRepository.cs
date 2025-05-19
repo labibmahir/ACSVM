@@ -13,5 +13,39 @@ namespace Infrastructure.Repositories
         public PersonImageRepository(DataContext context) : base(context)
         {
         }
+        public async Task<PersonImage> GetPersonImageByKey(Guid key)
+        {
+            try
+            {
+                return await FirstOrDefaultAsync(i => i.IsDeleted == false && i.Oid == key);
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
+        public async Task<PersonImage> GetImageByPersonId(Guid personId)
+        {
+            try
+            {
+                return await FirstOrDefaultAsync(i => i.IsDeleted == false && i.PersonId == personId);
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        public async Task<PersonImage> GetImageByVisitorId(Guid visitorId)
+        {
+            try
+            {
+                return await FirstOrDefaultAsync(i => i.IsDeleted == false && i.VisitorId == visitorId);
+            }
+            catch
+            {
+                throw;
+            }
+        }
     }
 }

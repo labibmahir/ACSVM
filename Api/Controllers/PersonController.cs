@@ -47,15 +47,35 @@ namespace Api.Controllers
         {
             try
             {
+                if (!personDto.AccessLevelId.HasValue && personDto.DeviceIdList.Length == 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
+
                 var personWithSamePersonNumer = await context.PersonRepository.GetPersonByPersonNumber(personDto.PersonNumber);
 
                 if (personWithSamePersonNumer != null && personWithSamePersonNumer.OrganizationId == personDto.OrganizationId)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
 
-                var deviceWithSameIP = await context.PersonRepository.GetPersonByphoneNumber(personDto.PhoneNumber);
+                var deviceWithSamePhone = await context.PersonRepository.GetPersonByphoneNumber(personDto.PhoneNumber);
 
-                if (deviceWithSameIP != null && deviceWithSameIP.OrganizationId == personDto.OrganizationId)
+                if (deviceWithSamePhone != null && deviceWithSamePhone.OrganizationId == personDto.OrganizationId)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateIPError);
+
+                var devices = new List<Device>();
+                if (personDto.AccessLevelId.HasValue && personDto.AccessLevelId.Value > 0)
+                {
+                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId.Value);
+                    devices = devicelist.ToList();
+                }
+                else
+                {
+                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(personDto.DeviceIdList);
+                    devices = devicelist.ToList();
+                }
+
+                var currentlyInActiveDevices = new List<Device>();
+                if (devices.Count() <= 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
+
 
                 Person person = new Person()
                 {
@@ -76,10 +96,6 @@ namespace Api.Controllers
 
                 };
 
-                var devices = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId);
-                var currentlyInActiveDevices = new List<Device>();
-                if (devices.Count() <= 0)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
 
                 foreach (var device in devices)
                 {
@@ -255,6 +271,8 @@ namespace Api.Controllers
                 if (key != personDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
+                if (!personDto.AccessLevelId.HasValue && personDto.DeviceIdList.Length == 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var personInDb = await context.PersonRepository.GetPersonByKey(personDto.Oid);
                 if (personInDb == null)
@@ -267,7 +285,19 @@ namespace Api.Controllers
 
 
 
-                var devices = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId);
+                var devices = new List<Device>();
+                if (personDto.AccessLevelId.HasValue && personDto.AccessLevelId.Value > 0)
+                {
+                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId.Value);
+                    devices = devicelist.ToList();
+                }
+                else
+                {
+                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(personDto.DeviceIdList);
+                    devices = devicelist.ToList();
+                }
+
+
                 var currentlyInActiveDevices = new List<Device>();
 
                 if (devices.Count() <= 0)

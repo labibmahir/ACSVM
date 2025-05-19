@@ -44,6 +44,7 @@ namespace Infrastructure.Contracts
         /// /// <param name="DeviceIP">IP of a Device.</param>
         /// <returns>Returns a Device if the AccessLevelId is matched.</returns>
         public Task<IEnumerable<Device>> GetDevicesByAccessLevel(int AccessLevelId);
+        public Task<IEnumerable<Device>> GetDevicesByDeviceIds(int[] DeviceIds);
         public Task<IEnumerable<Device>> GetDevices(DeviceFilterDto deviceFilterDto);
         public Task<int> GetDeviceCount(DeviceFilterDto deviceFilterDto);
     }

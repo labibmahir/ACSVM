@@ -90,6 +90,18 @@ namespace Infrastructure.Repositories
             }
 
         }
+        public async Task<IEnumerable<Device>> GetDevicesByDeviceIds(int[] DeviceIds)
+        {
+            try
+            {
+                return await QueryAsync(x => x.IsDeleted == false && DeviceIds.Contains(x.Oid));
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
         public async Task<IEnumerable<Device>> GetDevices(DeviceFilterDto deviceFilterDto)
         {
             try

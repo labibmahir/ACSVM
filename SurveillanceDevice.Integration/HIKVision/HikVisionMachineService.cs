@@ -7,6 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
+using System.Xml;
+using Utilities.Helpers;
+using System.Net.Http.Headers;
 
 namespace SurveillanceDevice.Integration.HIKVision
 {
@@ -197,6 +201,136 @@ namespace SurveillanceDevice.Integration.HIKVision
                 return (false, $"An error occurred: {ex.Message}");
             }
         }
+        public async Task<VMCaptureFingerPrintResponse> CaptureFingerPrint(Device device, VMCaptureFingerPrintRequest req)
+        {
+            try
+            {
+                var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+                _client.DefaultRequestHeaders.Add("Accept", "application/xml");
+                string xml = "";
+                XmlSerializer serializer = new XmlSerializer(typeof(VMCaptureFingerPrintRequest));
+                await using (var stringWriter = new Utf8StringWriter())
+                {
+                    await using (XmlWriter writer = XmlWriter.Create(stringWriter, new XmlWriterSettings() { Async = true }))
+                    {
+                        serializer.Serialize(writer, req);
+                        xml = stringWriter.ToString();
+                    }
+                }
+
+                var response = await _client.PostAsync("/ISAPI/AccessControl/CaptureFingerPrint",
+                    new StringContent(xml, Encoding.UTF8, "application/xml"));
+
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+                var buffer = Encoding.UTF8.GetBytes(responseText);
+                VMCaptureFingerPrintResponse res = new VMCaptureFingerPrintResponse();
+                //string? s = "<CaptureFingerPrint version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\"><fingerData>MzAxGA2lJSi8hxvhJCiUhC7lJUjYhDr5JWjMDjgtJVjIgFn1JEiseWmdFSi4AmrVJTjQgnCBJSigg3lVJTiUDI3hJSishb4JJkjch7IFJbjAc8T9FMiUX8tlJajUddHVFLi43+R9JWjJZQOeFci8GJmVFJikZ/idFJjgOfJ5FXi+DbQFFzjIFfwhF2jAiCjOJDjIKgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYRMAGysSY4EKhSEHMgPAC4cyDyEA3gkMO0dCUBAIgwIlMBGTB4KUHzDk3AYCORsQUKAOdXhKUnHZDHP7NjQQhA1fl2owwckQZZcoTeKaEmeUVyEExw/ftW0h0o0FeThZRsKcFA37aD5zcgMOt1oVxq4RGDoWMXHJBIB8CCM0vRM5YhUjBM4AhwAAAAAAoW0=</fingerData><fingerNo>1</fingerNo><fingerPrintQuality>97</fingerPrintQuality></CaptureFingerPrint>";
+
+                using (var stream = new MemoryStream(buffer))
+                {
+                    var ser = new XmlSerializer(typeof(VMCaptureFingerPrintResponse));
+                    res = (VMCaptureFingerPrintResponse)ser.Deserialize(stream);
+                }
+                if (res != null && res.fingerData != null)
+                {
+                    return res;
+                }
+                else
+                {
+                    throw (new Exception("Could not read fingerprint data"));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteFingerprint(Device device, EmployeeDetailDto request)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP,Convert.ToInt16(device.Port), device.Username, device.Password);
+
+            try
+            {
+                VMFingerPrintDeleteRequest req = new VMFingerPrintDeleteRequest();
+
+                req.mode = "byEmployeeNo";
+
+                VMFingerPrintEmployeeNumberDetail vMFingerPrintEmployeeNumberDetail = new VMFingerPrintEmployeeNumberDetail()
+                {
+                    employeeNo = request.EmployeeNo,
+                    fingerPrintID = new int[] { request.FingerPrintNumber }
+                };
+
+                req.EmployeeNoDetail = vMFingerPrintEmployeeNumberDetail;
+
+                var postData = new
+                {
+                    FingerPrintDelete = req
+                };
+
+                var jsonData = JsonConvert.SerializeObject(postData);
+
+                var response = await _client.PutAsync("/ISAPI/AccessControl/FingerPrint/Delete?format=json",
+                    new StringContent(jsonData, Encoding.UTF8, "application/json"));
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+
+                if (responseText != string.Empty)
+                {
+                    VMResponseStatus? rs = JsonConvert.DeserializeObject<VMResponseStatus?>(responseText);
+                    if (rs == null)
+                    {
+                        //_logger.LogError("An error happend while deleteing a finger print");
+                        //throw new Exception("An error happend while deleteing a finger print");
+                        return false;
+                    }
+                    if (rs.statusCode.Equals("1"))
+                    {
+                        bool ans = await CheckFingerprintDeleteProcess(_client);
+                        return ans;
+                    }
+                    else return false;
+                }
+                else
+                {
+                    //_logger.LogError("An error happend while deleteing a finger print");
+                    //throw new Exception("An error happend while deleteing a finger print");
+                    return false;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                
+                throw;
+            }
+        }
+        public async Task<bool> CheckFingerprintDeleteProcess(HttpClient _client)
+        {
+            while (true)
+            {
+                try
+                {
+                    var response = await _client.GetAsync("/ISAPI/AccessControl/FingerPrint/DeleteProcess?format=json");
+                    response.EnsureSuccessStatusCode();
+                    var responseText = await response.Content.ReadAsStringAsync();
+                    if (responseText != string.Empty)
+                    {
+                        VMFingerPrintDeleteProcessHolder? fd = JsonConvert.DeserializeObject<VMFingerPrintDeleteProcessHolder?>(responseText);
+                        if (fd.FingerPrintDeleteProcess.status.Equals("success")) return true;
+                        else return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            }
+        }
 
         #endregion FingerPrint
         #region Card
@@ -231,5 +365,120 @@ namespace SurveillanceDevice.Integration.HIKVision
         }
 
         #endregion Card
+
+
+        #region face
+        public async Task<(bool IsSuccess, string Message)> PostFaceRecordToLibrary(string ip, int port, string username, string password, FacePictureUploadDto faceRecordRequest, byte[] faceImage)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(ip, port, username, password);
+            _client.Timeout = TimeSpan.FromMilliseconds(30000);
+
+            //string jsonMetadata = "{\"faceLibType\":\"blackFD\",\"FDID\":\"1\",\"FPID\":\"ETL24020571\"}"; // Preformatted for testing
+
+            var jsonMetadata = System.Text.Json.JsonSerializer.Serialize(faceRecordRequest);
+
+            // string url = $"http://{ip}:{port}/ISAPI/Intelligent/FDLib/FaceDataRecord?format=json";
+            string url = $"/ISAPI/Intelligent/FDLib/FaceDataRecord?format=json";
+
+            try
+            {
+                var formData = new MultipartFormDataContent("----MyBoundary")
+                {
+                    new StringContent(jsonMetadata, Encoding.UTF8, "application/json")
+                    {
+                        Headers = { ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data") { Name = "FaceDataRecord" } }
+                    },
+                    new ByteArrayContent(faceImage)
+                    {
+                        Headers =
+                        {
+                            ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+                            {
+                                Name = "FaceImage",
+                                FileName = "facePic.jpg"
+                            },
+                            ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg")
+                        }
+                    }
+                };
+
+                formData.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("multipart/form-data");
+                formData.Headers.ContentType.Parameters.Add(new NameValueHeaderValue("boundary", "----MyBoundary"));
+
+                var response = await _client.PostAsync(url, formData);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    return (true, responseBody);
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return (false, errorContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Exception occurred: {ex.Message}");
+            }
+        }
+
+        public async Task<(bool IsSuccess, string Message)> DeleteFaceRecordToLibrary(string ip, int port, string username, string password, FacePictureRemoveDto faceRecordRequest, byte[] faceImage)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(ip, port, username, password);
+            _client.Timeout = TimeSpan.FromMilliseconds(30000);
+
+            //string jsonMetadata = "{\"faceLibType\":\"blackFD\",\"FDID\":\"1\",\"FPID\":\"ETL24020571\"}"; // Preformatted for testing
+
+            var jsonMetadata = System.Text.Json.JsonSerializer.Serialize(faceRecordRequest);
+
+            // string url = $"http://{ip}:{port}/ISAPI/Intelligent/FDLib/FaceDataRecord?format=json";
+            string url = $"/ISAPI/Intelligent/FDLib/FDSetUp?format=json";
+
+            try
+            {
+                var formData = new MultipartFormDataContent("----MyBoundary")
+                {
+                    new StringContent(jsonMetadata, Encoding.UTF8, "application/json")
+                    {
+                        Headers = { ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data") { Name = "FaceDataRecord" } }
+                    },
+                    new ByteArrayContent(faceImage)
+                    {
+                        Headers =
+                        {
+                            ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data")
+                            {
+                                Name = "FaceImage",
+                                FileName = "facePic.jpg"
+                            },
+                            ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/jpeg")
+                        }
+                    }
+                };
+
+                formData.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("multipart/form-data");
+                formData.Headers.ContentType.Parameters.Add(new NameValueHeaderValue("boundary", "----MyBoundary"));
+
+                var response = await _client.PutAsync(url, formData);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    return (true, responseBody);
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return (false, errorContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Exception occurred: {ex.Message}");
+            }
+        }
+        #endregion
     }
 }
