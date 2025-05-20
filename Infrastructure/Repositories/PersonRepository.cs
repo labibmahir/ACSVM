@@ -1,4 +1,5 @@
-﻿using Domain.Dto.PaginationFiltersDto;
+﻿using Domain.Dto;
+using Domain.Dto.PaginationFiltersDto;
 using Domain.Entities;
 using Infrastructure.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -39,11 +40,11 @@ namespace Infrastructure.Repositories
             }
         }
 
-        public async Task<IEnumerable<Person>> GetPersons(PersonFilterDto personFilterDto)
+        public async Task<IEnumerable<PersonReadDto>> GetPersons(PersonFilterDto personFilterDto)
         {
             try
             {
-                var query = context.Persons.Where(i => i.IsDeleted == false).AsQueryable();
+                var query = context.Persons.AsNoTracking().Include(i => i.PeopleImages).Include(f => f.FingerPrints).Where(i => i.IsDeleted == false).AsQueryable();
 
                 if (!string.IsNullOrEmpty(personFilterDto.search))
                     query = query.Where(x => x.FirstName.ToLower().Contains(personFilterDto.search.ToLower().Trim()) || x.Surname.ToLower().Contains(personFilterDto.search.ToLower().Trim())
@@ -92,7 +93,24 @@ namespace Infrastructure.Repositories
                 else
                     query = query.OrderBy(d => d.DateCreated);
 
-                var result = await query.Skip(personFilterDto.Page).Take(personFilterDto.PageSize)
+                var result = await query.Select(x => new PersonReadDto()
+                {
+                    Email = x.Email,
+                    FirstName = x.FirstName,
+                    Surname = x.Surname,
+                    Gender = x.Gender,
+                    imageBase64 = x.PeopleImages.Any() ? x.PeopleImages.FirstOrDefault().ImageBase64 : null,
+                    FingerPrints = x.FingerPrints.ToList(),
+                    IsDeviceAdministrator = x.IsDeviceAdministrator,
+                    Oid = x.Oid,
+                    OrganizationId = x.OrganizationId,
+                    PersonNumber = x.PersonNumber,
+                    PhoneNumber = x.PhoneNumber,
+                    UserVerifyMode = x.UserVerifyMode,
+                    ValidateEndPeriod = x.ValidateEndPeriod,
+                    ValidateStartPeriod = x.ValidateStartPeriod,
+
+                }).Skip(personFilterDto.Page).Take(personFilterDto.PageSize)
                   .ToListAsync();
 
                 return result;

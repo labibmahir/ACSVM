@@ -11,6 +11,7 @@ namespace SurveillanceDevice.Integration.HIKVision
     public interface IHikVisionMachineService
     {
         #region Person
+        Task<VMUserInfoSearchResponse> GetAllUsers(Device device, int searchResultPosition, int maxResults);
         Task<int> GetUserCount(Device device);
         //Task<string> GetUserById(Device device, string Id);
         //Task<string> AddBulkUser(Device device, VMUserInfoBulk user);
@@ -18,6 +19,8 @@ namespace SurveillanceDevice.Integration.HIKVision
 
         Task<string> UpdateUser(Device device, VMUserInfo user);
         Task<string> DeleteUserWithDetails(Device device, VMUserInfoDetailsDeleteRequest req);
+
+        Task<(string base64Image, byte[] binaryImage)> SaveEmployeeFaceImage(Device device, string employeeId, string faceUrl, string folderPath = null);
         #endregion Person
 
         #region Fingerprint
@@ -30,6 +33,10 @@ namespace SurveillanceDevice.Integration.HIKVision
 
         #region Cards
         Task<(bool Success, string Message)> AddCard(Device device, VMCardInfo card);
+
+        Task<VMCardInfoSearchResponse> GetCardsByEmployees(Device device, List<VMEmployeeNoListItem> employeeNoList, int searchResultPosition, int maxResults);
+        Task<EmployeeCardCount> GetEmployeeCardCount(Device device, string EmployeeId);
+
         #endregion Cards
         #region Face
         Task<(bool IsSuccess, string Message)> PostFaceRecordToLibrary(string ip, int port, string username, string password, FacePictureUploadDto faceRecordRequest, byte[] faceImage);

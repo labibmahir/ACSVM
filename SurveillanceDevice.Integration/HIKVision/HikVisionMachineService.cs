@@ -32,6 +32,37 @@ namespace SurveillanceDevice.Integration.HIKVision
         #endregion
 
         #region Person
+
+        public async Task<VMUserInfoSearchResponse> GetAllUsers(Device device, int searchResultPosition, int maxResults)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+            try
+            {
+                var searchData = new
+                {
+                    UserInfoSearchCond = new
+                    {
+                        searchID = "000000002",
+                        searchResultPosition = searchResultPosition,
+                        maxResults = maxResults,
+                    }
+                };
+                var response = await _client.PostAsync("/ISAPI/AccessControl/UserInfo/Search?format=json",
+                    new StringContent(JsonConvert.SerializeObject(searchData), Encoding.UTF8, "application/json"));
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+                var res = System.Text.Json.JsonSerializer.Deserialize<VMUserInfoSearchResponseHolder>(responseText);
+
+                if (res == null) throw (new Exception("Could not deserialize data"));
+                return res.UserInfoSearch;
+            }
+            catch (Exception ex)
+            {
+                return new VMUserInfoSearchResponse();
+            }
+        }
+
         public async Task<int> GetUserCount(Device device)
         {
             try
@@ -135,6 +166,46 @@ namespace SurveillanceDevice.Integration.HIKVision
             catch (Exception ex)
             {
                 return ex.Message;
+            }
+        }
+
+        public async Task<(string base64Image, byte[] binaryImage)> SaveEmployeeFaceImage(Device device, string employeeId, string faceUrl, string folderPath = null)
+        {
+            try
+            {
+                // Set authentication (Replace with your credentials)
+                var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+
+                // Fetch image
+                HttpResponseMessage response = await _client.GetAsync(faceUrl);
+                if (response.IsSuccessStatusCode)
+                {
+                    byte[] imageBytes = await response.Content.ReadAsByteArrayAsync();
+
+                    // Generate file path based on the folderPath or default to "faces/{employeeId}.jpg"
+                    string filePath;
+                    if (!string.IsNullOrEmpty(folderPath))
+                    {
+                        filePath = Path.Combine(folderPath, $"{employeeId}.jpg");
+                        await File.WriteAllBytesAsync(filePath, imageBytes);
+                    }
+
+                    // Convert to Base64 (optional)
+                    string base64Image = Convert.ToBase64String(imageBytes);
+
+                    // Return both Base64 string and Binary image
+                    return (base64Image, imageBytes);
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to download image for {employeeId}: {response.StatusCode}");
+                    return (null, null);  // Return null if download fails
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving image for {employeeId}: {ex.Message}");
+                return (null, null);  // Return null in case of error
             }
         }
         #endregion Person
@@ -250,7 +321,7 @@ namespace SurveillanceDevice.Integration.HIKVision
 
         public async Task<bool> DeleteFingerprint(Device device, EmployeeDetailDto request)
         {
-            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP,Convert.ToInt16(device.Port), device.Username, device.Password);
+            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
 
             try
             {
@@ -305,7 +376,7 @@ namespace SurveillanceDevice.Integration.HIKVision
             }
             catch (Exception ex)
             {
-                
+
                 throw;
             }
         }
@@ -363,6 +434,57 @@ namespace SurveillanceDevice.Integration.HIKVision
                 return (false, $"Error when adding card: {ex.Message}"); // Return failure with the error message
             }
         }
+
+        public async Task<VMCardInfoSearchResponse> GetCardsByEmployees(Device device, List<VMEmployeeNoListItem> employeeNoList, int searchResultPosition, int maxResults)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+            try
+            {
+                var searchData = new
+                {
+                    CardInfoSearchCond = new
+                    {
+                        searchID = "000000001",
+                        searchResultPosition = searchResultPosition,
+                        maxResults = maxResults,
+                        EmployeeNoList = employeeNoList
+                    }
+                };
+                var temp123 = JsonConvert.SerializeObject(searchData);
+                var response = await _client.PostAsync("/ISAPI/AccessControl/CardInfo/Search?format=json",
+                    new StringContent(JsonConvert.SerializeObject(searchData), Encoding.UTF8, "application/json"));
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+                var res = System.Text.Json.JsonSerializer.Deserialize<VMCardInfoSearchResponse>(responseText);
+                if (res == null) throw (new Exception("Could not deserialize data"));
+                return res;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+        public async Task<EmployeeCardCount> GetEmployeeCardCount(Device device, string EmployeeId)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+            try
+            {
+                var response = await _client.GetAsync($"/ISAPI/AccessControl/CardInfo/Count?format=json&employeeNo={EmployeeId}");
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+                var res = System.Text.Json.JsonSerializer.Deserialize<VMCardInfoCountResponse>(responseText);
+                if (res == null) throw (new Exception("Could not deserialize data"));
+                EmployeeCardCount result = new EmployeeCardCount(res, EmployeeId);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
 
         #endregion Card
 

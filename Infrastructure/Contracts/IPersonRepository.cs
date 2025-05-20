@@ -1,4 +1,5 @@
-﻿using Domain.Dto.PaginationFiltersDto;
+﻿using Domain.Dto;
+using Domain.Dto.PaginationFiltersDto;
 using Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace Infrastructure.Contracts
         /// </summary>
         /// <returns>Returns a list of all Persons.</returns>
         public Task<IEnumerable<Person>> GetPersons();
-        public Task<IEnumerable<Person>> GetPersons(PersonFilterDto personFilterDto);
+        public Task<IEnumerable<PersonReadDto>> GetPersons(PersonFilterDto personFilterDto);
         public Task<int> GetPersonsCount(PersonFilterDto personFilterDto);
         public Task<Person> GetPersonByPersonNumber(string personNumber);
 

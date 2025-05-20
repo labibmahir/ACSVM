@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Utilities.Constants;
 
 namespace Domain.Entities;
 
@@ -11,17 +13,27 @@ public class Visitor : BaseModel
     public string FirstName { get; set; }
     
     [Required]
-    public string LastName { get; set; }
+    public string Surname { get; set; }
     [MaxLength(50)]
     public string VisitorNumber { get; set; }
     public string Email { get; set; }
     
     public string PhoneNumber { get; set; }
-    
+
+    [Required]
+    public Enums.Gender Gender { get; set; }
     public string Address { get; set; }
     
     public string CompanyName { get; set; }
-    
+    [Required]
+    [Column(TypeName = "smalldatetime")]
+    public DateTime ValidateStartPeriod { get; set; }
+
+    [Required]
+    [Column(TypeName = "smalldatetime")]
+    public DateTime? ValidateEndPeriod { get; set; }
+
+    public Enums.UserVerifyMode? UserVerifyMode { get; set; }
     public virtual IEnumerable<Appointment> Appointments { get; set; }
     
     public virtual IEnumerable<FingerPrint> FingerPrints { get; set; }
