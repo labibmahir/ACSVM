@@ -1,6 +1,7 @@
 using Api.BackGroundServices;
 using Api.BackGroundServices.ProccessContract;
 using Api.BackGroundServices.ProcessImplimentations;
+using Api.NotificationHub;
 using Infrastructure;
 using Infrastructure.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -75,6 +76,8 @@ builder.Services.AddSingleton<IHikVisionMachineService, HikVisionMachineService>
 builder.Services.AddSingleton<ICustomHttpClientBuilder, CustomHttpClientBuilder>();
 builder.Services.AddSingleton<IProgressManager, ProgressManager>();
 builder.Services.AddHostedService<Syncronizer>();
+builder.Services.AddHostedService<AttendanceSyncronizer>();
+builder.Services.AddSignalR();
 builder.Services.AddCors(options => options.AddPolicy("AllowAll", builder =>
 {
     builder.WithOrigins("*")
@@ -96,6 +99,7 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<NotificationsHub>("/notificationshub");
 app.MapControllers();
 
 app.Run();

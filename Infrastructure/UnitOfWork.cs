@@ -170,7 +170,21 @@ namespace Infrastructure
                 return visitorRepository;
             }
         }
-        #endregion IdentifiedAssignDeviceRepository
+        #endregion VisitorRepository
+
+        #region AttendanceRepository
+        private IAttendanceRepository attendanceRepository;
+        public IAttendanceRepository AttendanceRepository
+        {
+            get
+            {
+                if (AttendanceRepository == null)
+                    attendanceRepository = new AttendanceRepository(context);
+
+                return attendanceRepository;
+            }
+        }
+        #endregion AttendanceRepository
 
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()

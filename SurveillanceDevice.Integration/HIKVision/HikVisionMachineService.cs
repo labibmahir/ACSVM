@@ -209,7 +209,7 @@ namespace SurveillanceDevice.Integration.HIKVision
             }
         }
         #endregion Person
-        
+
         #region FingerPrint
         public async Task<(bool IsSuccess, string Message)> SetFingerprint(Device device, VMFingerPrintSetUpRequest fingerInfo)
         {
@@ -403,6 +403,36 @@ namespace SurveillanceDevice.Integration.HIKVision
                 }
             }
         }
+
+        public async Task<VMFingerPrintSearchResponse> GetFingerprintsByEmployeeId(Device device, string EmployeeId)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+            try
+            {
+                var searchData = new
+                {
+                    FingerPrintCond = new
+                    {
+                        searchID = "000000001",
+                        employeeNo = EmployeeId,
+                        cardReaderNo = 1 // TODO: Figure out this
+                    }
+                };
+                var response = await _client.PostAsync("/ISAPI/AccessControl/FingerPrintUpload?format=json",
+                    new StringContent(JsonConvert.SerializeObject(searchData), Encoding.UTF8, "application/json"));
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+                var fingerPrintInfo = System.Text.Json.JsonSerializer.Deserialize<VMFingerPrintSearchByEmployeeResponse>(responseText);
+                if (fingerPrintInfo == null) throw (new Exception("Could not deserialize data"));
+                return fingerPrintInfo.FingerPrintInfo;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
 
         #endregion FingerPrint
         #region Card
@@ -602,6 +632,80 @@ namespace SurveillanceDevice.Integration.HIKVision
                 return (false, $"Exception occurred: {ex.Message}");
             }
         }
+        #endregion
+        #region Event
+        public async Task<int> GetAcsEventCount(Device device, DateTime startTime, DateTime endTime)
+        {
+            try
+            {
+                var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+
+                var searchData = new
+                {
+                    AcsEventTotalNumCond = new
+                    {
+                        searchID = "000000002",
+                        searchResultPosition = "0",
+                        maxResults = 20,
+                        startTime = startTime.ToString("yyyy-MM-ddTHH:mm:sszzz"),
+                        endTime = endTime.ToString("yyyy-MM-ddTHH:mm:sszzz"),
+                        major = 0,
+                        minor = 0
+                    }
+                };
+                var response = await _client.PostAsync("/ISAPI/AccessControl/AcsEventTotalNum?format=json",
+                    new StringContent(JsonConvert.SerializeObject(searchData), Encoding.UTF8, "application/json"));
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+                var res = System.Text.Json.JsonSerializer.Deserialize<VMAcsEventTotalNumResponseHolder>(responseText);
+
+                if (res == null) throw (new Exception("Could not deserialize data"));
+                return res.AcsEventTotalNum.totalNum;
+            }
+            catch
+            {
+                return default;
+                // throw;
+            }
+        }
+        public async Task<AcsEventResponse> GetAcsEvent(Device device, DateTime startTime, DateTime endTime, int searchResultPosition, int maxResults)
+        {
+            try
+            {
+                var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+
+                var searchData = new
+                {
+                    AcsEventCond = new
+                    {
+                        searchID = "000000002",
+                        searchResultPosition = searchResultPosition,
+                        maxResults = maxResults,
+                        startTime = startTime.ToString("yyyy-MM-ddTHH:mm:sszzz"),
+                        endTime = endTime.ToString("yyyy-MM-ddTHH:mm:sszzz"),
+                        major = 0,
+                        minor = 0
+                    }
+                };
+
+                var response = await _client.PostAsync("/ISAPI/AccessControl/AcsEvent?format=json",
+                    new StringContent(JsonConvert.SerializeObject(searchData), Encoding.UTF8, "application/json"));
+                response.EnsureSuccessStatusCode();
+
+                var responseText = await response.Content.ReadAsStringAsync();
+                var res = System.Text.Json.JsonSerializer.Deserialize<AcsEventResponse>(responseText);
+
+                if (res == null) throw (new Exception("Could not deserialize data"));
+                return res;
+            }
+            catch
+            {
+                return default;
+                // throw;
+            }
+        }
+
         #endregion
     }
 }

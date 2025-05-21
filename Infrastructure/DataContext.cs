@@ -33,4 +33,5 @@ public class DataContext : DbContext
     public DbSet<IdentifiedAssignedAppointment> IdentifiedAssignedAppointments { get; set; }
     
     public DbSet<Visitor> Visitors { get; set; }
+    public DbSet<Attendance> Attendances { get; set; }
 }

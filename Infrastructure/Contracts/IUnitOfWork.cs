@@ -30,5 +30,6 @@ namespace Infrastructure.Contracts
         IFingerPrintRepository FingerPrintRepository { get; }
         ICardRepository CardRepository { get; }
         IVisitorRepository VisitorRepository { get; }
+        IAttendanceRepository AttendanceRepository { get; }
     }
 }

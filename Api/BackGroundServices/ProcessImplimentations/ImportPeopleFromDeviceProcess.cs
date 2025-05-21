@@ -5,6 +5,8 @@ using Domain.Entities;
 using Infrastructure.Contracts;
 using SurveillanceDevice.Integration.HIKVision;
 using Utilities.Constants;
+using Infrastructure;
+using static Utilities.Constants.Enums;
 
 namespace Api.BackGroundServices.ProcessImplimentations
 {
@@ -308,7 +310,50 @@ namespace Api.BackGroundServices.ProcessImplimentations
                 // Fingerprints
                 List<FingerPrint> fingerPrints = new List<FingerPrint>();
                 int returnedFingerprints = 0;
+                foreach (var person in persons)
+                {
+                    try
+                    {
+                        //if (person.EmployeeNumber == "00000020")
+                        //{ 
+                        //    int a = 0; 
+                        //}
+                        var returned = (await _visionMachineService
+                                .GetFingerprintsByEmployeeId(this.Device, person.PersonNumber)).FingerPrintList;
 
+
+                        foreach (var fingerprint in returned)
+                        {
+                            FingerPrint fp = new FingerPrint();
+                            fp.FingerNumber = (FingerNumber)fingerprint.fingerPrintID;
+                            //fp.Type = fingerprint.fingerType.ToFingerprintType();
+                            //fp.CardReaderNumber = fingerprint.cardReaderNo;
+                            fp.Data = fingerprint.fingerData;
+                            //       fp.Person = person;
+                            fp.PersonId = person.Oid;
+                            fp.IsDeleted = false;
+                            fp.DateCreated = DateTime.Now;
+                            //   fingerPrints.Add(fingerprint.ToFingerprint(person));
+                            var checkFingerPrint = await context.FingerPrintRepository.FirstOrDefaultAsync(x => x.PersonId == person.Oid && x.FingerNumber == fp.FingerNumber && x.IsDeleted == false);
+                            if (checkFingerPrint == null)
+                                fingerPrints.Add(fp);
+
+                        }
+
+                        context.FingerPrintRepository.AddRange(fingerPrints);
+                        await context.SaveChangesAsync();
+
+                        returnedFingerprints++;
+                        this.progress = (float)(((float)returnedFingerprints * 100.0f) / (float)persons.Count / 3 + 66);
+                        this.ProcessDescription = $"Importing fingerprints: {returnedFingerprints}/{persons.Count} fingerprint";
+                    }
+                    catch
+                    {
+                        // TODO: Add somthing to error list and log somthing
+                    }
+                }
+                context.FingerPrintRepository.AddRange(fingerPrints);
+                await context.SaveChangesAsync();
                 this.ProcessState = ProcessState.Finished;
                 this.progress = 100;
             }

@@ -32,6 +32,7 @@ namespace Utilities.Constants
         public const string UnauthorizedAttemptOfRecordUpdateError = "Unauthorized attempt of updating record!";
         public const string DeviceNotFoundAccessLevelError = "No device is assigned or deleted to your selected AccessLevel";
         public const string DeviceNotActive = "Devices are currently not active";
+        public const string SelectedDeviceNotActive = "Select Device is currently offline.";
         public const string InvalidLogin = "Invalid username or password!";
     }
 }

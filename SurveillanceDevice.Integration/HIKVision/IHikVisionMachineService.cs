@@ -27,6 +27,7 @@ namespace SurveillanceDevice.Integration.HIKVision
 
         Task<bool> DeleteFingerprint(Device device, EmployeeDetailDto request);
         Task<bool> CheckFingerprintDeleteProcess(HttpClient _client);
+        Task<VMFingerPrintSearchResponse> GetFingerprintsByEmployeeId(Device device, string EmployeeId);
         #endregion FingerPrint
 
         #region Cards
@@ -40,5 +41,10 @@ namespace SurveillanceDevice.Integration.HIKVision
         Task<(bool IsSuccess, string Message)> PostFaceRecordToLibrary(string ip, int port, string username, string password, FacePictureUploadDto faceRecordRequest, byte[] faceImage);
         Task<(bool IsSuccess, string Message)> DeleteFaceRecordToLibrary(string ip, int port, string username, string password, FacePictureRemoveDto faceRecordRequest, byte[] faceImage);
         #endregion Face
+        #region Event
+        Task<int> GetAcsEventCount(Device device, DateTime startTime, DateTime endTime);
+        Task<AcsEventResponse> GetAcsEvent(Device device, DateTime startTime, DateTime endTime, int searchResultPosition, int maxResults);
+
+        #endregion
     }
 }

@@ -552,6 +552,12 @@ namespace Api.Controllers
                 {
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
                 }
+
+                if (!await IsDeviceActive(device.DeviceIP))
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.SelectedDeviceNotActive);
+                }
+
                 IProcess importPeople = new ImportPeopleFromDeviceProcess(device, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
                 return Ok(importPeople.ToProcessDto());
