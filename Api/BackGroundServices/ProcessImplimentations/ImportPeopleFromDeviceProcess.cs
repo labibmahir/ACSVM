@@ -151,8 +151,6 @@ namespace Api.BackGroundServices.ProcessImplimentations
                                 {
                                     Oid = Guid.NewGuid(),
                                     ImageData = facePictures.binaryImage,
-                                    // FaceLibraryType = "blackFD",
-                                    //FaceLibraryId = "1",
                                     ImageBase64 = facePictures.base64Image,
                                     DateCreated = DateTime.Now,
                                     PersonId = person.Oid,
@@ -169,17 +167,6 @@ namespace Api.BackGroundServices.ProcessImplimentations
 
 
                         }
-                        //PersonAssignedDevice personAssignedDevice = new PersonAssignedDevice()
-                        //{
-                        //    DateCreated = DateTime.Now,
-                        //    DeviceId = this.Device.DeviceID,
-                        //    PersonId = person.Id,
-                        //    IsRowDeleted = false,
-                        //};
-                        // FileLogger.Log($"Inserting Persons in Database");
-                        //   unitOfWork.PersonAssignedDeviceRepository.Add(personAssignedDevice);
-
-                        // await unitOfWork.SaveChangesAsync();
                     }
                 }
                 List<Card> cards = new List<Card>();
@@ -230,18 +217,12 @@ namespace Api.BackGroundServices.ProcessImplimentations
                         try
                         {
                             tempReturnedCardCount = 0;
-                            //Task<VMCardInfoSearchResponse> task = _visionMachineService
-                            //    .GetCardsByEmployeeId(this.Device, cardCount.EmployeeNo,lastCardIndex,20);
-                            //cardInfoTasks.Add(task);
-                            //await Task.Delay (1000);
                             var returned = (await _visionMachineService
                                 .GetCardsByEmployees(this.Device, employeeNoList, lastCardIndex, 20)).CardInfoSearch.CardInfo;
                             lastCardIndex += 20;
                             returnedCardsInfo.AddRange(returned);
                             returnedCardsCount += returned.Count;
                             tempReturnedCardCount = returned.Count;
-                            //this.progress = (float)(((float)returnedCardsCount * 100.0f) / (float)count / 2 + 50);
-                            //this.ProcessDescription = $"Importing card info: {returnedCardsCount}/{allCardsCount} card";
                         }
                         catch
                         {
@@ -266,9 +247,7 @@ namespace Api.BackGroundServices.ProcessImplimentations
                 {
                     if (!existingCards.Any(x => x.CardNumber == cardInfo.cardNo))
                     {
-                        // Card card = cardInfo.ToCard();
                         Card card = new Card();
-                        //                        card.CardType = cardInfo.cardType.ToCardType();
                         card.CardNumber = cardInfo.cardNo;
                         card.IsDeleted = false;
                         card.DateCreated = DateTime.Now;
@@ -276,7 +255,7 @@ namespace Api.BackGroundServices.ProcessImplimentations
                         card.DateCreated = DateTime.Now;
                         context.CardRepository.Add(card);
                         await context.SaveChangesAsync();
-                        //var temp =  persons.FirstOrDefault(x => x.PersonNumber == cardInfo.employeeNo);
+
                         var tempPerson = await context.PersonRepository.FirstOrDefaultAsync(x => x.PersonNumber == cardInfo.employeeNo);
                         if (tempPerson != null)
                         {
@@ -329,49 +308,6 @@ namespace Api.BackGroundServices.ProcessImplimentations
                 // Fingerprints
                 List<FingerPrint> fingerPrints = new List<FingerPrint>();
                 int returnedFingerprints = 0;
-                //List<Task<VMCardInfoSearchResponse>> cardInfoTasks = new List<Task<VMCardInfoSearchResponse>>();
-                //to be start from here tomorrow
-                //foreach (var person in persons)
-                //{
-                //    try
-                //    {
-                //        //if (person.EmployeeNumber == "00000020")
-                //        //{ 
-                //        //    int a = 0; 
-                //        //}
-                //        var returned = (await _visionMachineService
-                //                .GetFingerprintsByEmployeeId(this.Device, person.PersonNumber)).FingerPrintList;
-
-
-                //        foreach (var fingerprint in returned)
-                //        {
-                //            FingerPrint fp = new FingerPrint();
-                //            fp.FingerNo = fingerprint.fingerPrintID;
-                //            fp.Type = fingerprint.fingerType.ToFingerprintType();
-                //            fp.CardReaderNumber = fingerprint.cardReaderNo;
-                //            fp.Data = fingerprint.fingerData;
-                //            //       fp.Person = person;
-                //            fp.PersonId = person.Oid;
-                //            fp.IsDeleted = false;
-                //            fp.DateCreated = DateTime.Now;
-                //            //   fingerPrints.Add(fingerprint.ToFingerprint(person));
-                //            var checkFingerPrint = await unitOfWork.FingerPrintRepository.FirstOrDefaultAsync(x => x.PersonId == person.Oid && x.FingerNo == fp.FingerNo && x.IsDeleted == false);
-                //            if (checkFingerPrint == null)
-                //                fingerPrints.Add(fp);
-
-                //        }
-
-                //        returnedFingerprints++;
-                //        this.progress = (float)(((float)returnedFingerprints * 100.0f) / (float)persons.Count / 3 + 66);
-                //        this.ProcessDescription = $"Importing fingerprints: {returnedFingerprints}/{persons.Count} fingerprint";
-                //    }
-                //    catch
-                //    {
-                //        // TODO: Add somthing to error list and log somthing
-                //    }
-                //}
-                //                unitOfWork.FingerPrintRepository.AddRange(fingerPrints);
-                //   await unitOfWork.SaveChangesAsync();
 
                 this.ProcessState = ProcessState.Finished;
                 this.progress = 100;

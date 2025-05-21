@@ -2,14 +2,10 @@
 using Domain.Dto;
 using Domain.Entities;
 using Infrastructure.Contracts;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SurveillanceDevice.Integration.HIKVision;
 using Utilities.Constants;
 using System.Net.NetworkInformation;
-using Infrastructure;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System;
 
 namespace Api.Controllers
 {
@@ -21,11 +17,11 @@ namespace Api.Controllers
         private readonly ILogger<PersonImageController> logger;
         private readonly IConfiguration _configuration;
         private readonly IHikVisionMachineService _visionMachineService;
+        
         /// <summary>
         /// Default constructor.
         /// </summary>
         /// <param name="context">Instance of the UnitOfWork.</param>
-
         public PersonImageController(IUnitOfWork context, ILogger<PersonImageController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService)
         {
             this.context = context;
@@ -268,8 +264,7 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
 
                 var personImage = await context.PersonImageRepository.GetImageByPersonId(PersonId);
-
-
+                
                 return Ok(personImage);
             }
             catch (Exception ex)

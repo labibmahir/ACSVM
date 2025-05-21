@@ -23,7 +23,6 @@ namespace Api.BackGroundServices
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Syncronizer running at: {time}", DateTimeOffset.Now);
-                // FileLogger.Log($"Syncronizer running at: {{time}}{DateTimeOffset.Now}");
                 await Task.Delay(1000, stoppingToken); // 3600000
 
                 var process = (await _progressManager.GetAllProcess())
@@ -37,8 +36,7 @@ namespace Api.BackGroundServices
 
             }
         }
-
-
+        
         private async Task ImportPeopleFromDevice(ImportPeopleFromDeviceProcess process)
         {
             try
@@ -58,8 +56,5 @@ namespace Api.BackGroundServices
 
             }
         }
-
-
-
     }
 }

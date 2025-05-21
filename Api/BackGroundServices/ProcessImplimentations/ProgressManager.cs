@@ -11,11 +11,10 @@ namespace Api.BackGroundServices.ProcessImplimentations
 
         private readonly object ProcessesLock = new object();
         private List<IProcess> Processes { get; set; } = new List<IProcess>();
-        public ProgressManager(//IUnitOfWork unitOfWork
+        public ProgressManager(
             ILogger<IProgressManager> logger
             , IHikVisionMachineService visionMachineService)
         {
-            //this.unitOfWork = unitOfWork;
             this.logger = logger;
             _visionMachineService = visionMachineService;
         }
@@ -33,10 +32,10 @@ namespace Api.BackGroundServices.ProcessImplimentations
         {
             lock (ProcessesLock)
             {
-                var p = Processes.FirstOrDefault(x => x.ProcessId == processId);
-                if (p != null)
+                var process = Processes.FirstOrDefault(x => x.ProcessId == processId);
+                if (process!= null)
                 {
-                    Processes.Remove(p);
+                    Processes.Remove(process);
                 }
             }
         }

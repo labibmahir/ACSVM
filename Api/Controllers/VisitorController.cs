@@ -3,7 +3,6 @@ using Domain.Dto;
 using Domain.Entities;
 using Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SurveillanceDevice.Integration.HIKVision;
 using Utilities.Constants;
