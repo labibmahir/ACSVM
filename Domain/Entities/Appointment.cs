@@ -13,13 +13,21 @@ public class Appointment : BaseModel
     public DateTime AppointmentDate { get; set; }
     
     [Required]
-    public int SlotId { get; set; }
+    [Column(TypeName = "time(7)")]
+    public TimeSpan StartTime { get; set; }
+    
+    [Required]
+    [Column(TypeName = "time(7)")]
+    public TimeSpan EndTime { get; set; }
+    
+    [Required]
+    public bool IsCompleted { get; set; }
+    
+    [Required]
+    public bool IsCancelled { get; set; }
     
     [Required]
     public Guid VisitorId { get; set; }
-    
-    [ForeignKey("SlotId")]
-    public virtual Slot Slot { get; set; }
     
     [ForeignKey("VisitorId")]
     public virtual Visitor Vistor { get; set; }

@@ -138,6 +138,7 @@ namespace SurveillanceDevice.Integration.HIKVision
             }
         }
         #endregion Person
+        
         #region FingerPrint
         public async Task<(bool IsSuccess, string Message)> SetFingerprint(Device device, VMFingerPrintSetUpRequest fingerInfo)
         {

@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using Utilities.Constants;
 
 namespace Domain.Entities;
 

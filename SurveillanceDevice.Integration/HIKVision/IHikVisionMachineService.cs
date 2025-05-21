@@ -12,8 +12,6 @@ namespace SurveillanceDevice.Integration.HIKVision
     {
         #region Person
         Task<int> GetUserCount(Device device);
-        //Task<string> GetUserById(Device device, string Id);
-        //Task<string> AddBulkUser(Device device, VMUserInfoBulk user);
         Task<string> AddUser(Device device, VMUserInfo user);
 
         Task<string> UpdateUser(Device device, VMUserInfo user);
