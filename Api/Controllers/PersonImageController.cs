@@ -42,7 +42,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreatePersonImage)]
-        public async Task<ActionResult<Person>> CreatePersonImage(PersonImageDto personImageDto)
+        public async Task<ActionResult<PersonImage>> CreatePersonImage(PersonImageDto personImageDto)
         {
             try
             {
@@ -138,7 +138,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreateVisitorImage)]
-        public async Task<ActionResult<Person>> CreatePersonImage(VisitorImageDto visitorImageDto)
+        public async Task<ActionResult<PersonImage>> CreateVisitorImage(VisitorImageDto visitorImageDto)
         {
             try
             {

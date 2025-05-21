@@ -4,6 +4,7 @@ using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250520212002_Adding required fields for device in Visitor Table")]
+    partial class AddingrequiredfieldsfordeviceinVisitorTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -76,15 +79,6 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("DateModified")
                         .HasColumnType("smalldatetime");
 
-                    b.Property<TimeSpan>("EndTime")
-                        .HasColumnType("time(7)");
-
-                    b.Property<bool>("IsCancelled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
-
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -94,13 +88,15 @@ namespace Infrastructure.Migrations
                     b.Property<int?>("OrganizationId")
                         .HasColumnType("int");
 
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("time(7)");
+                    b.Property<int>("SlotId")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("VisitorId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Oid");
+
+                    b.HasIndex("SlotId");
 
                     b.HasIndex("VisitorId");
 
@@ -517,6 +513,43 @@ namespace Infrastructure.Migrations
                     b.ToTable("PeopleImages");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Slot", b =>
+                {
+                    b.Property<int>("Oid")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Oid"));
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DateCreated")
+                        .HasColumnType("smalldatetime");
+
+                    b.Property<DateTime?>("DateModified")
+                        .HasColumnType("smalldatetime");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time(7)");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ModifiedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("OrganizationId")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time(7)");
+
+                    b.HasKey("Oid");
+
+                    b.ToTable("Slots");
+                });
+
             modelBuilder.Entity("Domain.Entities.UserAccount", b =>
                 {
                     b.Property<Guid>("Oid")
@@ -653,11 +686,19 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Appointment", b =>
                 {
+                    b.HasOne("Domain.Entities.Slot", "Slot")
+                        .WithMany("Appointments")
+                        .HasForeignKey("SlotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Domain.Entities.Visitor", "Vistor")
                         .WithMany("Appointments")
                         .HasForeignKey("VisitorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Slot");
 
                     b.Navigation("Vistor");
                 });
@@ -797,6 +838,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("IdentifiedAssignedAppointments");
 
                     b.Navigation("PeopleImages");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Slot", b =>
+                {
+                    b.Navigation("Appointments");
                 });
 
             modelBuilder.Entity("Domain.Entities.Visitor", b =>

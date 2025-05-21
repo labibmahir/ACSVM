@@ -10,5 +10,7 @@ namespace Infrastructure.Contracts
 {
     public interface IIdentifiedAssignCardRepository : IRepository<IdentifiedAssignCard>
     {
+        public Task<IdentifiedAssignCard> GetIdentifiedAssignCardByPerson(Guid PersonId);
+        public Task<IdentifiedAssignCard> GetIdentifiedAssignCardByVisitor(Guid VisitorId);
     }
 }

@@ -64,6 +64,19 @@ namespace Utilities.Constants
         public const string UpdatePerson = "person/{key}";
 
         public const string DeletePerson = "person/{key}";
+        public const string ImportPersonFromDevice = "person/importpersonfromdevice";
+        #endregion
+
+        #region Visitor
+        public const string CreateVisitor = "visitor";
+
+        public const string ReadVisitors = "visitors";
+
+        public const string ReadVisitorByKey = "visitor/key/{key}";
+
+        public const string UpdateVisitor = "visitor/{key}";
+
+        public const string DeleteVisitor = "visitor/{key}";
         #endregion
 
         #region FingerPrint

@@ -1,85 +1,76 @@
-﻿using Api.BackGroundServices.ProccessContract;
-using Api.BackGroundServices.ProcessImplimentations;
+﻿using Domain.Dto.HIKVision;
 using Domain.Dto;
-using Domain.Dto.HIKVision;
-using Domain.Dto.PaginationFiltersDto;
 using Domain.Entities;
-using Infrastructure;
 using Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SurveillanceDevice.Integration.HIKVision;
-using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Net.NetworkInformation;
 using Utilities.Constants;
+using System.Net.NetworkInformation;
+using Domain.Dto.PaginationFiltersDto;
 
 namespace Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class PersonController : ApiBaseController
+    public class VisitorController : ApiBaseController
     {
         private readonly IUnitOfWork context;
-        private readonly ILogger<PersonController> logger;
+        private readonly ILogger<VisitorController> logger;
         private readonly IConfiguration _configuration;
         private readonly IHikVisionMachineService _visionMachineService;
-        private readonly IProgressManager progressManager;
         /// <summary>
         /// Default constructor.
         /// </summary>
         /// <param name="context">Instance of the UnitOfWork.</param>
 
-        public PersonController(IUnitOfWork context, ILogger<PersonController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService, IProgressManager progressManager)
+        public VisitorController(IUnitOfWork context, ILogger<VisitorController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService)
         {
             this.context = context;
             this.logger = logger;
             _configuration = configuration;
             _visionMachineService = visionMachineService;
-            this.progressManager = progressManager;
         }
-
         /// <summary>
-        /// URL: api/person
+        /// URL: api/visitor
         /// </summary>
-        /// <param name="person">person object.</param>
+        /// <param name="visitor">visitor object.</param>
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
-        [Route(RouteConstants.CreatePerson)]
-        public async Task<ActionResult<Person>> CreatePerson(PersonDto personDto)
+        [Route(RouteConstants.CreateVisitor)]
+        public async Task<ActionResult<Person>> CreateVisitor(VisitorDto visitorDto)
         {
             try
             {
-                if (!personDto.AccessLevelId.HasValue && personDto.DeviceIdList.Length == 0)
+                if (!visitorDto.AccessLevelId.HasValue && visitorDto.DeviceIdList.Length == 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
-                var personWithSamePersonNumer = await context.PersonRepository.GetPersonByPersonNumber(personDto.PersonNumber);
+                var visitorWithSameVisitornNumer = await context.VisitorRepository.GetVisitorByVisitorNumber(visitorDto.VisitorNumber);
 
-                if (personWithSamePersonNumer != null && personWithSamePersonNumer.OrganizationId == personDto.OrganizationId)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
+                if (visitorWithSameVisitornNumer != null && visitorWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
 
-                var checkVisitornWithSamePersonNumer = await context.VisitorRepository.GetVisitorByVisitorNumber(personDto.PersonNumber);
+                var checkPersonNoWithSameVisitornNumer = await context.PersonRepository.GetPersonByPersonNumber(visitorDto.VisitorNumber);
 
-                if (checkVisitornWithSamePersonNumer != null && checkVisitornWithSamePersonNumer.OrganizationId == personDto.OrganizationId)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
+                if (checkPersonNoWithSameVisitornNumer != null && checkPersonNoWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
 
-                var personWithSamePhone = await context.PersonRepository.GetPersonByphoneNumber(personDto.PhoneNumber);
+                var visitorWithSamePhone = await context.VisitorRepository.GetVisitorByphoneNumber(visitorDto.PhoneNumber);
 
-                if (personWithSamePhone != null && personWithSamePhone.OrganizationId == personDto.OrganizationId)
+                if (visitorWithSamePhone != null && visitorWithSamePhone.OrganizationId == visitorDto.OrganizationId)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateIPError);
 
                 var devices = new List<Device>();
-                if (personDto.AccessLevelId.HasValue && personDto.AccessLevelId.Value > 0)
+                if (visitorDto.AccessLevelId.HasValue && visitorDto.AccessLevelId.Value > 0)
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId.Value);
+                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(visitorDto.AccessLevelId.Value);
                     devices = devicelist.ToList();
                 }
                 else
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(personDto.DeviceIdList);
+                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(visitorDto.DeviceIdList);
                     devices = devicelist.ToList();
                 }
 
@@ -88,22 +79,21 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
 
 
-                Person person = new Person()
+                Visitor visitor = new Visitor()
                 {
                     DateCreated = DateTime.Now,
                     IsDeleted = false,
                     CreatedBy = GetLoggedInUserId(),
-                    Email = personDto.Email,
-                    FirstName = personDto.FirstName,
-                    Gender = personDto.Gender,
-                    OrganizationId = personDto.OrganizationId,
-                    PersonNumber = personDto.PersonNumber,
-                    PhoneNumber = personDto.PhoneNumber,
-                    Surname = personDto.Surname,
-                    IsDeviceAdministrator = personDto.IsDeviceAdministrator,
-                    UserVerifyMode = personDto.UserVerifyMode,
-                    ValidateEndPeriod = personDto.ValidateEndPeriod,
-                    ValidateStartPeriod = personDto.ValidateStartPeriod,
+                    Email = visitorDto.Email,
+                    FirstName = visitorDto.FirstName,
+                    Gender = visitorDto.Gender,
+                    OrganizationId = visitorDto.OrganizationId,
+                    VisitorNumber = visitorDto.VisitorNumber,
+                    PhoneNumber = visitorDto.PhoneNumber,
+                    Surname = visitorDto.Surname,
+                    UserVerifyMode = visitorDto.UserVerifyMode,
+                    ValidateEndPeriod = visitorDto.ValidateEndPeriod,
+                    ValidateStartPeriod = visitorDto.ValidateStartPeriod,
 
                 };
 
@@ -134,22 +124,22 @@ namespace Api.Controllers
 
                 VMUserInfo vMUserInfo = new VMUserInfo()
                 {
-                    employeeNo = person.PersonNumber,
+                    employeeNo = visitorDto.VisitorNumber,
                     deleteUser = false,
-                    name = person.FirstName + " " + person.Surname,
+                    name = visitor.FirstName + " " + visitor.Surname,
                     userType = "normal",
                     closeDelayEnabled = true,
                     Valid = new VMEffectivePeriod()
                     {
                         enable = true,
-                        beginTime = person.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        endTime = person.ValidateEndPeriod?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        beginTime = visitorDto.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        endTime = visitorDto.ValidateEndPeriod?.ToString("yyyy-MM-ddTHH:mm:ss"),
                         timeType = "local"
                     },
                     doorRight = "1",
                     RightPlan = vMDoorPermissionSchedules,
-                    localUIRight = person.IsDeviceAdministrator,
-                    userVerifyMode = personDto.UserVerifyMode switch
+                    localUIRight = false,
+                    userVerifyMode = visitorDto.UserVerifyMode switch
                     {
                         Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
                         Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
@@ -158,7 +148,7 @@ namespace Api.Controllers
                     },
                     checkUser = true,
                     addUser = true,
-                    gender = person.Gender switch
+                    gender = visitorDto.Gender switch
                     {
                         Enums.Gender.Male => "male",
                         Enums.Gender.Female => "female",
@@ -172,7 +162,7 @@ namespace Api.Controllers
                 }
 
 
-                context.PersonRepository.Add(person);
+                context.VisitorRepository.Add(visitor);
                 await context.SaveChangesAsync();
                 List<IdentifiedAssignDevice> identifiedAssignDevices = new List<IdentifiedAssignDevice>();
                 foreach (var item in devices.Concat(currentlyInActiveDevices))
@@ -182,8 +172,8 @@ namespace Api.Controllers
                         CreatedBy = GetLoggedInUserId(),
                         DateCreated = DateTime.Now,
                         DeviceId = item.Oid,
-                        OrganizationId = person.OrganizationId,
-                        PersonId = person.Oid,
+                        OrganizationId = visitor.OrganizationId,
+                        VisitorId = visitor.Oid,
 
                     };
                     identifiedAssignDevices.AddRange(identifiedAssignDevices);
@@ -191,7 +181,7 @@ namespace Api.Controllers
 
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                 await context.SaveChangesAsync();
-                return Ok(person);
+                return Ok(visitor);
             }
             catch (Exception ex)
             {
@@ -200,26 +190,26 @@ namespace Api.Controllers
         }
 
         /// <summary>
-        /// URL: api/person/key/{key}
+        /// URL: api/visitor/key/{key}
         /// </summary>
-        /// <param name="key">Primary key of the table Device.</param>
+        /// <param name="key">Primary key of the table visitor.</param>
         /// <returns>Http status code: Ok.</returns>
         [HttpGet]
-        [Route(RouteConstants.ReadPersonByKey)]
+        [Route(RouteConstants.ReadVisitorByKey)]
         [Authorize]
-        public async Task<IActionResult> ReadPersonByKey(Guid key)
+        public async Task<IActionResult> ReadVisitorByKey(Guid key)
         {
             try
             {
                 if (key == Guid.Empty)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
 
-                var person = await context.PersonRepository.GetPersonByKey(key);
+                var visitor = await context.VisitorRepository.GetVisitorByKey(key);
 
-                if (person == null)
+                if (visitor == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                return Ok(person);
+                return Ok(visitor);
             }
             catch (Exception ex)
             {
@@ -228,36 +218,36 @@ namespace Api.Controllers
         }
 
         /// <summary>
-        /// URL:api/persons
+        /// URL:api/visitors
         /// </summary>
-        /// <returns>A list of persons.</returns>
+        /// <returns>A list of visitors.</returns>
         [HttpGet]
-        [Route(RouteConstants.ReadPersons)]
-        public async Task<IActionResult> ReadPersons([FromQuery] PersonFilterDto personFilterDto)
+        [Route(RouteConstants.ReadVisitors)]
+        public async Task<IActionResult> ReadVisitors([FromQuery] VisitorFilterDto visitorFilterDto)
         {
             try
             {
-                if (personFilterDto.PageSize == 0)
+                if (visitorFilterDto.PageSize == 0)
                 {
-                    var persons = await context.PersonRepository.GetPersons();
+                    var visitors = await context.VisitorRepository.GetVisitors();
 
-                    return Ok(persons);
+                    return Ok(visitors);
                 }
                 else
                 {
-                    int currentPage = personFilterDto.Page;
-                    personFilterDto.Page = ((personFilterDto.Page - 1) * (personFilterDto.PageSize));
-                    var persons = await context.PersonRepository.GetPersons(personFilterDto);
+                    int currentPage = visitorFilterDto.Page;
+                    visitorFilterDto.Page = ((visitorFilterDto.Page - 1) * (visitorFilterDto.PageSize));
+                    var visitors = await context.VisitorRepository.GetVisitors(visitorFilterDto);
 
-                    PagedResultDto<PersonReadDto> personDto = new PagedResultDto<PersonReadDto>()
+                    PagedResultDto<VisitorReadDto> visitorDto = new PagedResultDto<VisitorReadDto>()
                     {
-                        Data = persons.ToList(),
+                        Data = visitors.ToList(),
                         PageNumber = currentPage,
-                        PageSize = personFilterDto.PageSize,
-                        TotalItems = await context.PersonRepository.GetPersonsCount(personFilterDto)
+                        PageSize = visitorFilterDto.PageSize,
+                        TotalItems = await context.VisitorRepository.GetVisitorsCount(visitorFilterDto)
                     };
 
-                    return Ok(personDto);
+                    return Ok(visitorDto);
 
                 }
             }
@@ -268,48 +258,49 @@ namespace Api.Controllers
         }
 
         /// <summary>
-        /// URL: api/person/{key}
+        /// URL: api/visitor/{key}
         /// </summary>
         /// <param name="key">Primary key of the table person.</param>
-        /// <param name="personDto">person to be updated.</param>
+        /// <param name="visitorDto">person to be updated.</param>
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
-        [Route(RouteConstants.UpdatePerson)]
+        [Route(RouteConstants.UpdateVisitor)]
         [AllowAnonymous]
-        public async Task<IActionResult> UpdatePerson(Guid key, PersonDto personDto)
+        public async Task<IActionResult> UpdateVisitor(Guid key, VisitorDto visitorDto)
         {
             try
             {
-                if (key != personDto.Oid)
+                if (key != visitorDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
-                if (!personDto.AccessLevelId.HasValue && personDto.DeviceIdList.Length == 0)
+                if (!visitorDto.AccessLevelId.HasValue && visitorDto.DeviceIdList.Length == 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
-                var personInDb = await context.PersonRepository.GetPersonByKey(personDto.Oid);
-                if (personInDb == null)
+                var visitorInDb = await context.VisitorRepository.GetVisitorByKey(visitorDto.Oid);
+                if (visitorInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                var personWithSamePersoneNo = await context.PersonRepository.GetPersonByPersonNumber(personDto.PersonNumber);
+                var visitorWithSameVisitorNo = await context.VisitorRepository.GetVisitorByVisitorNumber(visitorDto.VisitorNumber);
 
-                if (personWithSamePersoneNo != null && personWithSamePersoneNo.OrganizationId == personDto.OrganizationId && personWithSamePersoneNo.Oid != personDto.Oid)
+                if (visitorWithSameVisitorNo != null && visitorWithSameVisitorNo.OrganizationId == visitorDto.OrganizationId && visitorWithSameVisitorNo.Oid != visitorWithSameVisitorNo.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
 
-                var checkVisitornWithSamePersonNumer = await context.VisitorRepository.GetVisitorByVisitorNumber(personDto.PersonNumber);
+                var checkPersonNoWithSameVisitornNumer = await context.PersonRepository.GetPersonByPersonNumber(visitorDto.VisitorNumber);
 
-                if (checkVisitornWithSamePersonNumer != null && checkVisitornWithSamePersonNumer.OrganizationId == personDto.OrganizationId)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
+                if (checkPersonNoWithSameVisitornNumer != null && checkPersonNoWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
+
 
 
                 var devices = new List<Device>();
-                if (personDto.AccessLevelId.HasValue && personDto.AccessLevelId.Value > 0)
+                if (visitorDto.AccessLevelId.HasValue && visitorDto.AccessLevelId.Value > 0)
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId.Value);
+                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(visitorDto.AccessLevelId.Value);
                     devices = devicelist.ToList();
                 }
                 else
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(personDto.DeviceIdList);
+                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(visitorDto.DeviceIdList);
                     devices = devicelist.ToList();
                 }
 
@@ -332,21 +323,20 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
 
 
-                personInDb.FirstName = personDto.FirstName;
-                personInDb.Surname = personDto.Surname;
-                personInDb.PersonNumber = personDto.PersonNumber;
-                personInDb.PhoneNumber = personDto.PhoneNumber;
-                personInDb.Gender = personDto.Gender;
-                personInDb.Email = personDto.Email;
-                personInDb.IsDeviceAdministrator = personDto.IsDeviceAdministrator;
-                personInDb.OrganizationId = personDto.OrganizationId;
-                personInDb.UserVerifyMode = personDto.UserVerifyMode;
-                personInDb.ValidateStartPeriod = personDto.ValidateStartPeriod;
-                personInDb.ValidateEndPeriod = personDto.ValidateEndPeriod;
-                personInDb.IsDeleted = false;
-                personInDb.OrganizationId = personDto.OrganizationId;
-                personInDb.DateModified = DateTime.Now;
-                personInDb.ModifiedBy = GetLoggedInUserId();
+                visitorInDb.FirstName = visitorDto.FirstName;
+                visitorInDb.Surname = visitorDto.Surname;
+                visitorInDb.VisitorNumber = visitorDto.VisitorNumber;
+                visitorInDb.PhoneNumber = visitorDto.PhoneNumber;
+                visitorInDb.Gender = visitorDto.Gender;
+                visitorInDb.Email = visitorDto.Email;
+                visitorInDb.OrganizationId = visitorDto.OrganizationId;
+                visitorInDb.UserVerifyMode = visitorDto.UserVerifyMode;
+                visitorInDb.ValidateStartPeriod = visitorDto.ValidateStartPeriod;
+                visitorInDb.ValidateEndPeriod = visitorDto.ValidateEndPeriod;
+                visitorInDb.IsDeleted = false;
+                visitorInDb.OrganizationId = visitorDto.OrganizationId;
+                visitorInDb.DateModified = DateTime.Now;
+                visitorInDb.ModifiedBy = GetLoggedInUserId();
 
                 List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
 
@@ -360,29 +350,29 @@ namespace Api.Controllers
 
                 VMUserInfo vMUserInfo = new VMUserInfo()
                 {
-                    employeeNo = personDto.PersonNumber,
+                    employeeNo = visitorDto.VisitorNumber,
                     deleteUser = false,
-                    name = personDto.FirstName + " " + personDto.Surname,
+                    name = visitorDto.FirstName + " " + visitorDto.Surname,
                     userType = "normal",
                     closeDelayEnabled = true,
                     Valid = new VMEffectivePeriod()
                     {
                         enable = true,
-                        beginTime = personDto.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        endTime = personDto.ValidateEndPeriod?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        beginTime = visitorDto.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        endTime = visitorDto.ValidateEndPeriod?.ToString("yyyy-MM-ddTHH:mm:ss"),
                         timeType = "local"
                     },
                     doorRight = "1",
                     RightPlan = vMDoorPermissionSchedules,
-                    localUIRight = personDto.IsDeviceAdministrator,
-                    userVerifyMode = personDto.UserVerifyMode switch
+                    localUIRight = false,
+                    userVerifyMode = visitorDto.UserVerifyMode switch
                     {
                         Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
                         Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
                         Enums.UserVerifyMode.card => "card",
                         _ => "faceAndFpAndCard"//this is default
                     },
-                    gender = personDto.Gender switch
+                    gender = visitorDto.Gender switch
                     {
                         Enums.Gender.Male => "male",
                         Enums.Gender.Female => "female",
@@ -390,9 +380,9 @@ namespace Api.Controllers
                     }
                 };
 
-                var identifiedAssignedDeviceByPerson = await context.IdentifiedAssignDeviceRepository.QueryAsync(x => x.IsDeleted == false && x.PersonId == personDto.Oid);
+                var identifiedAssignedDeviceByVisitor = await context.IdentifiedAssignDeviceRepository.QueryAsync(x => x.IsDeleted == false && x.VisitorId == visitorDto.Oid);
 
-                foreach (var item in identifiedAssignedDeviceByPerson)
+                foreach (var item in identifiedAssignedDeviceByVisitor)
                     context.IdentifiedAssignDeviceRepository.Delete(new IdentifiedAssignDevice() { Oid = item.Oid });
 
 
@@ -404,8 +394,8 @@ namespace Api.Controllers
                         CreatedBy = GetLoggedInUserId(),
                         DateCreated = DateTime.Now,
                         DeviceId = item.Oid,
-                        OrganizationId = personDto.OrganizationId,
-                        PersonId = personDto.Oid,
+                        OrganizationId = visitorDto.OrganizationId,
+                        PersonId = visitorDto.Oid,
 
                     };
                     identifiedAssignDevices.AddRange(identifiedAssignDevices);
@@ -417,7 +407,7 @@ namespace Api.Controllers
                 }
 
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
-                context.PersonRepository.Update(personInDb);
+                context.VisitorRepository.Update(visitorInDb);
                 await context.SaveChangesAsync();
 
                 return StatusCode(StatusCodes.Status204NoContent);
@@ -428,29 +418,28 @@ namespace Api.Controllers
             }
         }
 
-
         /// <summary>
-        /// URL: api/person/{key}
+        /// URL: api/visitor/{key}
         /// </summary>
         /// <param name="key">Primary key of the table person.</param>
         /// <returns>Http status code: Ok.</returns>
         [HttpDelete]
-        [Route(RouteConstants.DeletePerson)]
-        public async Task<IActionResult> DeletePerson(Guid key)
+        [Route(RouteConstants.DeleteVisitor)]
+        public async Task<IActionResult> DeleteVisitor(Guid key)
         {
             try
             {
                 if (key == Guid.Empty)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
 
-                var personInDb = await context.PersonRepository.GetPersonByKey(key);
+                var visitorInDb = await context.VisitorRepository.GetVisitorByKey(key);
 
-                if (personInDb == null)
+                if (visitorInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                var personAssignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByPerson(key);
+                var visitorAssignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(key);
 
-                foreach (var item in personAssignedDevices)
+                foreach (var item in visitorAssignedDevices)
                 {
                     item.IsDeleted = true;
                     item.DateModified = DateTime.Now;
@@ -492,26 +481,28 @@ namespace Api.Controllers
                     context.FingerPrintRepository.Update(item);
                 }
 
-                personInDb.DateModified = DateTime.Now;
-                personInDb.ModifiedBy = GetLoggedInUserId();
-                personInDb.IsDeleted = true;
+                visitorInDb.DateModified = DateTime.Now;
+                visitorInDb.ModifiedBy = GetLoggedInUserId();
+                visitorInDb.IsDeleted = true;
 
                 VMUserInfoDetailsDeleteRequest vMCardInfoDeleteRequest = new VMUserInfoDetailsDeleteRequest()
                 {
-                    EmployeeNoList = new List<VMEmployeeNoListItem?>() { new() { employeeNo = personInDb.PersonNumber } }
+                    EmployeeNoList = new List<VMEmployeeNoListItem?>() { new() { employeeNo = visitorInDb.VisitorNumber } }
                 };
 
-                foreach (var assignedDevice in personAssignedDevices)
+                foreach (var assignedDevice in visitorAssignedDevices)
                 {
 
                     var result = await _visionMachineService.DeleteUserWithDetails(assignedDevice.Device, vMCardInfoDeleteRequest);
                 }
-                var fingerPrintInDb = await context.FingerPrintRepository.GetAllFingerPrintOfPeronByPersonId(personInDb.Oid);
+
+                var fingerPrintInDb = await context.FingerPrintRepository.GetAllFingerPrintOfVisitorByVisitorId(visitorInDb.Oid);
                 if (fingerPrintInDb != null && fingerPrintInDb.Count() > 0)
                 {
 
                     foreach (var item in fingerPrintInDb)
                     {
+
                         item.IsDeleted = true;
                         item.ModifiedBy = GetLoggedInUserId();
                         item.DateModified = DateTime.Now;
@@ -519,7 +510,7 @@ namespace Api.Controllers
 
                     }
                 }
-                var assignCardInDb = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByPerson(personInDb.Oid);
+                var assignCardInDb = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByVisitor(visitorInDb.Oid);
                 if (assignCardInDb != null)
                 {
                     assignCardInDb.IsDeleted = true;
@@ -529,39 +520,16 @@ namespace Api.Controllers
 
                 }
 
-                context.PersonRepository.Update(personInDb);
+                context.VisitorRepository.Update(visitorInDb);
                 await context.SaveChangesAsync();
 
-
-                return Ok(personInDb);
+                return Ok(visitorInDb);
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
             }
         }
-
-        [HttpGet]
-        [Route(RouteConstants.ImportPersonFromDevice)]
-        public async Task<IActionResult> ImportPersonFromDevice(int id)
-        {
-            try
-            {
-                var device = await context.DeviceRepository.GetDeviceByKey(id);
-                if (device == null)
-                {
-                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
-                }
-                IProcess importPeople = new ImportPeopleFromDeviceProcess(device, ProcessPriority.Urgent);
-                await progressManager.AddProcess(importPeople);
-                return Ok(importPeople.ToProcessDto());
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
-            }
-        }
-
         private async Task<bool> IsDeviceActive(string ipAddress)
         {
             try

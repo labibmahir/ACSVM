@@ -24,6 +24,7 @@ namespace Utilities.Constants
         public const string UsernameTaken = "Username already exists!";
         public const string DeviceNameTaken = "Device Name already exists!";
         public const string PersonNumberTaken = "Person Number already exists!";
+        public const string VisitorNumberTaken = "Visitor Number already exists!";
         public const string CardNumberTake = "Card Number already exists!";
         public const string DeviceCannotBeDeleted = "Device Cannot be deleted because its been assigned to some users!";
         public const string CardCannotBeDeleted = "Card Cannot be deleted because its been assigned to some users!";

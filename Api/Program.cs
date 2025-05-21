@@ -1,8 +1,13 @@
+using Api.BackGroundServices;
+using Api.BackGroundServices.ProccessContract;
+using Api.BackGroundServices.ProcessImplimentations;
 using Infrastructure;
 using Infrastructure.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SurveillanceDevice.Integration.HIKVision;
+using SurveillanceDevice.Integration.HttpClientBuilder;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,6 +72,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<DataContext>(x => x.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 
+builder.Services.AddSingleton<IHikVisionMachineService, HikVisionMachineService>();
+builder.Services.AddSingleton<ICustomHttpClientBuilder, CustomHttpClientBuilder>();
+builder.Services.AddSingleton<IProgressManager, ProgressManager>();
+builder.Services.AddHostedService<Syncronizer>();
 builder.Services.AddCors(options => options.AddPolicy("AllowAll", builder =>
 {
     builder.WithOrigins("*")
