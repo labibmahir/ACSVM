@@ -9,43 +9,55 @@ using Utilities.Constants;
 
 namespace Domain.Dto
 {
-    public class VisitorDto
+    public class AppointmentDto
     {
+        [Key]
         public Guid Oid { get; set; }
 
         public int? AccessLevelId { get; set; }
         public int[] DeviceIdList { get; set; }
+
+        public Guid[] PersonIds { get; set; }
+
         public int? OrganizationId { get; set; }
 
         [Required]
-        [MaxLength(100)]
         public string FirstName { get; set; }
 
         [Required]
-        [MaxLength(100)]
         public string Surname { get; set; }
-
-        [MaxLength(50)]
-        public string VisitorNumber { get; set; }
-
-        [MaxLength(20)]
+        //[MaxLength(50)]
+        //public string VisitorNumber { get; set; }
         public string Email { get; set; }
 
-        [MaxLength(15)]
+        [Required]
         public string PhoneNumber { get; set; }
 
         [Required]
         public Enums.Gender Gender { get; set; }
+        public string Address { get; set; }
 
-
-        [Required]
-        [Column(TypeName = "smalldatetime")]
-        public DateTime ValidateStartPeriod { get; set; }
+        public string CompanyName { get; set; }
 
         [Required]
         [Column(TypeName = "smalldatetime")]
-        public DateTime ValidateEndPeriod { get; set; }
+        public DateTime AppointmentDate { get; set; }
 
-        public Enums.UserVerifyMode? UserVerifyMode { get; set; }
+        [Required]
+        [Column(TypeName = "time(7)")]
+        public TimeSpan StartTime { get; set; }
+
+        [Required]
+        [Column(TypeName = "time(7)")]
+        public TimeSpan EndTime { get; set; }
+
+        public Enums.UserVerifyMode? VisitorVerifyMode { get; set; }
+        //[Required]
+        //public bool IsCompleted { get; set; }
+
+        //[Required]
+        //public bool IsCancelled { get; set; }
+
+
     }
 }

@@ -132,7 +132,7 @@ namespace Api.Controllers
                     {
                         enable = true,
                         beginTime = visitorDto.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        endTime = visitorDto.ValidateEndPeriod?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        endTime = visitorDto.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
                         timeType = "local"
                     },
                     doorRight = "1",
@@ -358,7 +358,7 @@ namespace Api.Controllers
                     {
                         enable = true,
                         beginTime = visitorDto.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        endTime = visitorDto.ValidateEndPeriod?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        endTime = visitorDto.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
                         timeType = "local"
                     },
                     doorRight = "1",

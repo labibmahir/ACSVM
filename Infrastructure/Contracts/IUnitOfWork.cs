@@ -31,5 +31,7 @@ namespace Infrastructure.Contracts
         ICardRepository CardRepository { get; }
         IVisitorRepository VisitorRepository { get; }
         IAttendanceRepository AttendanceRepository { get; }
+        IAppointmentRepository AppointmentRepository { get; }
+        IIdentifiedAssignedAppointmentRepository IdentifiedAssignedAppointmentRepository { get; }
     }
 }

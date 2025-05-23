@@ -13,9 +13,9 @@ namespace Domain.Entities
         [Key]
         public Guid Oid { get; set; }
 
+        [Required]
         [StringLength(50)]
-        public Guid? PersonId { get; set; }
-        public Guid? VisitorId { get; set; }
+        public Guid PersonId { get; set; }
 
         public DateTime? AuthenticationDateAndTime { get; set; }
 
@@ -37,9 +37,6 @@ namespace Domain.Entities
         public string? DeviceSerialNo { get; set; }
         [StringLength(50)]
         public string? CardNo { get; set; }
-
-        [ForeignKey("VisitorId")]
-        public virtual Visitor Visitor { get; set; }
 
         [ForeignKey("PersonId")]
         public virtual Person Person { get; set; }

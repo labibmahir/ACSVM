@@ -24,6 +24,7 @@ namespace Utilities.Constants
         public const string UsernameTaken = "Username already exists!";
         public const string DeviceNameTaken = "Device Name already exists!";
         public const string PersonNumberTaken = "Person Number already exists!";
+        public const string PersonNotFound = "Person Not does not exists!";
         public const string VisitorNumberTaken = "Visitor Number already exists!";
         public const string CardNumberTake = "Card Number already exists!";
         public const string DeviceCannotBeDeleted = "Device Cannot be deleted because its been assigned to some users!";
@@ -34,5 +35,6 @@ namespace Utilities.Constants
         public const string DeviceNotActive = "Devices are currently not active";
         public const string SelectedDeviceNotActive = "Select Device is currently offline.";
         public const string InvalidLogin = "Invalid username or password!";
+        public const string AlreadyHaveAppointment = "Already have appointment. Please cancel previous appointment to proceed";
     }
 }

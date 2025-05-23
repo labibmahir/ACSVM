@@ -31,20 +31,5 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
-        public async Task<Attendance> GetAttendanceBetweenDateAndTimeByVisitorNumber(DateTime StartAuthenticationDateAndTime, DateTime EndAuthenticationDateAndTime, string VisitorNo)
-        {
-            try
-            {
-                return await context.Attendances.AsNoTracking().Include(p => p.Person).Where(
-                                                        x => x.Visitor.VisitorNumber == VisitorNo.Trim()
-                                                             && x.AuthenticationDateAndTime >= StartAuthenticationDateAndTime
-                                                             && x.AuthenticationDateAndTime <= EndAuthenticationDateAndTime
-                                                    ).FirstOrDefaultAsync();
-            }
-            catch
-            {
-                throw;
-            }
-        }
     }
 }

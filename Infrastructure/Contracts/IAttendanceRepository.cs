@@ -10,6 +10,6 @@ namespace Infrastructure.Contracts
     public interface IAttendanceRepository : IRepository<Attendance>
     {
         public Task<Attendance> GetAttendanceBetweenDateAndTimeByPersonNumber(DateTime StartAuthenticationDateAndTime, DateTime EndAuthenticationDateAndTime, string PersonNo);
-        public Task<Attendance> GetAttendanceBetweenDateAndTimeByVisitorNumber(DateTime StartAuthenticationDateAndTime, DateTime EndAuthenticationDateAndTime, string VisitorNo);
+
     }
 }

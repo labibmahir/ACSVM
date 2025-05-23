@@ -128,5 +128,19 @@ namespace Utilities.Constants
 
         public const string DeletePersonImage = "person-image/{key}";
         #endregion
+
+
+        #region Appointment
+        public const string CreateAppointment = "appointment";
+
+        public const string ReadAppointment = "appointments";
+
+        public const string ReadAppointmentByKey = "appointment/key/{key}";
+
+        public const string UpdateAppointment = "appointment/{key}";
+
+        public const string DeleteAppointment = "appointment/{key}";
+        #endregion
+
     }
 }

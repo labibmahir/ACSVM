@@ -8,22 +8,23 @@ public class Visitor : BaseModel
 {
     [Key]
     public Guid Oid { get; set; }
-    
+
     [Required]
     public string FirstName { get; set; }
-    
+
     [Required]
     public string Surname { get; set; }
     [MaxLength(50)]
     public string VisitorNumber { get; set; }
     public string Email { get; set; }
-    
+
+    [Required]
     public string PhoneNumber { get; set; }
 
     [Required]
     public Enums.Gender Gender { get; set; }
     public string Address { get; set; }
-    
+
     public string CompanyName { get; set; }
     [Required]
     [Column(TypeName = "smalldatetime")]
@@ -31,16 +32,16 @@ public class Visitor : BaseModel
 
     [Required]
     [Column(TypeName = "smalldatetime")]
-    public DateTime? ValidateEndPeriod { get; set; }
+    public DateTime ValidateEndPeriod { get; set; }
 
     public Enums.UserVerifyMode? UserVerifyMode { get; set; }
     public virtual IEnumerable<Appointment> Appointments { get; set; }
-    
+
     public virtual IEnumerable<FingerPrint> FingerPrints { get; set; }
-    
+
     public virtual IEnumerable<IdentifiedAssignCard> IdentifiedAssignCards { get; set; }
-    
+
     public virtual IEnumerable<IdentifiedAssignDevice> IdentifiedAssignDevices { get; set; }
-    
+
     public virtual IEnumerable<PersonImage> PersonImages { get; set; }
 }

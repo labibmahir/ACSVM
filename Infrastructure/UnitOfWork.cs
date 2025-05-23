@@ -178,13 +178,41 @@ namespace Infrastructure
         {
             get
             {
-                if (AttendanceRepository == null)
+                if (attendanceRepository == null)
                     attendanceRepository = new AttendanceRepository(context);
 
                 return attendanceRepository;
             }
         }
         #endregion AttendanceRepository
+
+        #region AppointmentRepository
+        private IAppointmentRepository appointmentRepository;
+        public IAppointmentRepository AppointmentRepository
+        {
+            get
+            {
+                if (appointmentRepository == null)
+                    appointmentRepository = new AppointmentRepository(context);
+
+                return appointmentRepository;
+            }
+        }
+        #endregion AppointmentRepository
+
+        #region AppointmentRepository
+        private IIdentifiedAssignedAppointmentRepository identifiedAssignedAppointmentRepository;
+        public IIdentifiedAssignedAppointmentRepository IdentifiedAssignedAppointmentRepository
+        {
+            get
+            {
+                if (identifiedAssignedAppointmentRepository == null)
+                    identifiedAssignedAppointmentRepository = new IdentifiedAssignedAppointmentRepository(context);
+
+                return identifiedAssignedAppointmentRepository;
+            }
+        }
+        #endregion AppointmentRepository
 
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()

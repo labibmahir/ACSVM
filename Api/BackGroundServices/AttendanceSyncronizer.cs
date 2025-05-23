@@ -97,61 +97,62 @@ namespace Api.BackGroundServices
                                                 var now = DateTime.Now;
 
                                                 Person? getPersonByPersonNumber = new Person();
-                                                Visitor? getVisitorByPersonNumber = new Visitor();
+                                                //  Visitor? getVisitorByPersonNumber = new Visitor();
                                                 getPersonByPersonNumber = await context.PersonRepository.GetPersonByPersonNumber(item.EmployeeNo);
-                                                if (getPersonByPersonNumber == null)
-                                                {
-                                                    getVisitorByPersonNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
-                                                }
+                                                //if (getPersonByPersonNumber == null)
+                                                //{
+                                                //    getVisitorByPersonNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
+                                                //}
                                                 Attendance recentAttendance = null; ;
                                                 if (getPersonByPersonNumber != null)
-                                                    recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByPersonNumber(oneMinuteAgo, now, getPersonByPersonNumber.PersonNumber);
-                                                else if (getVisitorByPersonNumber != null)
-                                                    recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByVisitorNumber(oneMinuteAgo, now, getVisitorByPersonNumber.VisitorNumber);
-
-                                                if (recentAttendance == null)
                                                 {
-                                                    AlarmInfo alarmInfo = new AlarmInfo()
+                                                    recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByPersonNumber(oneMinuteAgo, now, getPersonByPersonNumber.PersonNumber);
+                                                    //else if (getVisitorByPersonNumber != null)
+                                                    //            recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByVisitorNumber(oneMinuteAgo, now, getVisitorByPersonNumber.VisitorNumber);
+
+                                                    if (recentAttendance == null)
                                                     {
-                                                        dateTime = item.EventTime.ToString(),
-                                                        eventType = "AccessControllEvent",
-                                                        ipAddress = device.DeviceIP,
-                                                        eventDescription = "Access Controll Event",
-                                                        eventState = "",
-                                                        ipv6Address = "",
-                                                        activePostCount = 0,
-                                                        channelID = "",
-                                                        AccessControllerEvent = new AccessControllerEvent()
+                                                        AlarmInfo alarmInfo = new AlarmInfo()
                                                         {
-                                                            employeeNoString = item.EmployeeNo,
-                                                            name = "",
-                                                            deviceName = "",
-                                                            userType = item.UserType,
-                                                            serialNo = 0,
-                                                            cardType = int.TryParse(item.CardType.ToString(), out int result) ? result : 0,
-                                                            accessChannel = 0
-                                                        }
-                                                    };
-                                                    alarmInfo.Device = device;
-                                                    await _attendanceAggrigator.SendAccessControllEventNotification(alarmInfo);
+                                                            dateTime = item.EventTime.ToString(),
+                                                            eventType = "AccessControllEvent",
+                                                            ipAddress = device.DeviceIP,
+                                                            eventDescription = "Access Controll Event",
+                                                            eventState = "",
+                                                            ipv6Address = "",
+                                                            activePostCount = 0,
+                                                            channelID = "",
+                                                            AccessControllerEvent = new AccessControllerEvent()
+                                                            {
+                                                                employeeNoString = item.EmployeeNo,
+                                                                name = "",
+                                                                deviceName = "",
+                                                                userType = item.UserType,
+                                                                serialNo = 0,
+                                                                cardType = int.TryParse(item.CardType.ToString(), out int result) ? result : 0,
+                                                                accessChannel = 0
+                                                            }
+                                                        };
+                                                        alarmInfo.Device = device;
+                                                        await _attendanceAggrigator.SendAccessControllEventNotification(alarmInfo);
 
-                                                    Attendance accessControllEvent = new Attendance()
-                                                    {
-                                                        CardNo = item.CardReaderNo.ToString(),
-                                                        VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
-                                                        PersonId = getPersonByPersonNumber == null ? null : getPersonByPersonNumber.Oid,
-                                                        AuthenticationDateAndTime = item.EventTime.DateTime,
-                                                        AuthenticationDate = item.EventTime.DateTime,
-                                                        AuthenticationTime = item.EventTime.TimeOfDay,
-                                                        DeviceId = device.Oid,
-                                                        DateCreated = DateTime.Now
+                                                        Attendance accessControllEvent = new Attendance()
+                                                        {
+                                                            CardNo = item.CardReaderNo.ToString(),
+                                                            // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
+                                                            PersonId = getPersonByPersonNumber.Oid,
+                                                            AuthenticationDateAndTime = item.EventTime.DateTime,
+                                                            AuthenticationDate = item.EventTime.DateTime,
+                                                            AuthenticationTime = item.EventTime.TimeOfDay,
+                                                            DeviceId = device.Oid,
+                                                            DateCreated = DateTime.Now
 
-                                                    };
-                                                    var added = context.AttendanceRepository.Add(accessControllEvent);
+                                                        };
+                                                        var added = context.AttendanceRepository.Add(accessControllEvent);
 
-                                                    await context.SaveChangesAsync();
+                                                        await context.SaveChangesAsync();
+                                                    }
                                                 }
-
                                             }
                                             catch (Exception ex)
                                             {
