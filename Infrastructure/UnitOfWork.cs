@@ -214,6 +214,35 @@ namespace Infrastructure
         }
         #endregion AppointmentRepository
 
+
+        #region ClientDBDetailRepository
+        private IClientDBDetailRepository clientDBDetailRepository;
+        public IClientDBDetailRepository ClientDBDetailRepository
+        {
+            get
+            {
+                if (clientDBDetailRepository == null)
+                    clientDBDetailRepository = new ClientDBDetailRepository(context);
+
+                return clientDBDetailRepository;
+            }
+        }
+        #endregion ClientDBDetailRepository
+
+        #region ClientFieldMappingRepository
+        private IClientFieldMappingRepository clientFieldMappingRepository;
+        public IClientFieldMappingRepository ClientFieldMappingRepository
+        {
+            get
+            {
+                if (clientFieldMappingRepository == null)
+                    clientFieldMappingRepository = new ClientFieldMappingRepository(context);
+
+                return clientFieldMappingRepository;
+            }
+        }
+        #endregion ClientFieldMappingRepository
+
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()
         {

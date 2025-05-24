@@ -68,7 +68,17 @@ namespace Infrastructure.Repositories
             }
 
         }
-
+        public async Task<Appointment> GetActiveAppointmentByVisitorAppointmentDateAndTime(Guid VisitorId, DateTime authenticationDate, TimeSpan authenticationTime)
+        {
+            try
+            {
+                return await FirstOrDefaultAsync(x => x.IsDeleted == false && x.IsCancelled == false && x.IsCompleted == false && x.AppointmentDate.Date == authenticationDate.Date && x.StartTime >= authenticationTime && x.EndTime <= authenticationTime);
+            }
+            catch
+            {
+                throw;
+            }
+        }
         public async Task<IEnumerable<Appointment>> GetAppointments()
         {
             try

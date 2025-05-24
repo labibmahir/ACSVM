@@ -33,5 +33,7 @@ namespace Infrastructure.Contracts
         IAttendanceRepository AttendanceRepository { get; }
         IAppointmentRepository AppointmentRepository { get; }
         IIdentifiedAssignedAppointmentRepository IdentifiedAssignedAppointmentRepository { get; }
+        IClientDBDetailRepository ClientDBDetailRepository { get; }
+        IClientFieldMappingRepository ClientFieldMappingRepository { get; }
     }
 }

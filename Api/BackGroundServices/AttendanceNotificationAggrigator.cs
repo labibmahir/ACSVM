@@ -1,5 +1,6 @@
 ﻿using Api.NotificationHub;
 using Domain.Dto.HIKVision;
+using Domain.Entities;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Api.BackGroundServices
@@ -18,6 +19,16 @@ namespace Api.BackGroundServices
             try
             {
                 await _hubContext.Clients.All.SendAsync("ReceiveEvent", info);
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+        public async Task SendAppointmentNotification(Visitor visitor, List<Guid> personId)
+        {
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("AppointmentNotification", visitor);
             }
             catch (Exception ex)
             {

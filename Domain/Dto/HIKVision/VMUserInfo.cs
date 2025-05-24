@@ -143,8 +143,9 @@ namespace Domain.Dto.HIKVision
         /// <summary>
         /// optional, integer type, floor No. list, which is extended from floorNumber
         /// </summary>
-        [JsonIgnore]
-        public List<int>? floorNumbers { get; set; } = null;
+        //[JsonIgnore]
+        //public List<int>? floorNumbers { get; set; } = null;
+        public List<FloorNumber> floorNumbers { get; set; } = null;
 
         /// <summary>
         /// optional, read-only, number of linked face pictures. If this field is not returned, it indicates that this function is not
@@ -183,5 +184,11 @@ namespace Domain.Dto.HIKVision
         /// </summary>
         [JsonIgnore]
         public List<VMPersonInfoExtends?> PersonInfoExtends { get; set; } = new List<VMPersonInfoExtends?>();
+    }
+
+    public class FloorNumber
+    {
+        public int min { get; set; }
+        public int max { get; set; }
     }
 }

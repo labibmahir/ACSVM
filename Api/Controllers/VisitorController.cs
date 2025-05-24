@@ -43,18 +43,18 @@ namespace Api.Controllers
         {
             try
             {
-                if (!visitorDto.AccessLevelId.HasValue && visitorDto.DeviceIdList.Length == 0)
+                if (!visitorDto.AccessLevelId.HasValue && visitorDto.DeviceIdList != null && visitorDto.DeviceIdList.Length == 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
-                var visitorWithSameVisitornNumer = await context.VisitorRepository.GetVisitorByVisitorNumber(visitorDto.VisitorNumber);
+                //var visitorWithSameVisitornNumer = await context.VisitorRepository.GetVisitorByVisitorNumber(visitorDto.VisitorNumber);
 
-                if (visitorWithSameVisitornNumer != null && visitorWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
+                //if (visitorWithSameVisitornNumer != null && visitorWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
+                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
 
-                var checkPersonNoWithSameVisitornNumer = await context.PersonRepository.GetPersonByPersonNumber(visitorDto.VisitorNumber);
+                //var checkPersonNoWithSameVisitornNumer = await context.PersonRepository.GetPersonByPersonNumber(visitorDto.VisitorNumber);
 
-                if (checkPersonNoWithSameVisitornNumer != null && checkPersonNoWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
+                //if (checkPersonNoWithSameVisitornNumer != null && checkPersonNoWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
+                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
 
                 var visitorWithSamePhone = await context.VisitorRepository.GetVisitorByphoneNumber(visitorDto.PhoneNumber);
 
@@ -87,7 +87,7 @@ namespace Api.Controllers
                     FirstName = visitorDto.FirstName,
                     Gender = visitorDto.Gender,
                     OrganizationId = visitorDto.OrganizationId,
-                    VisitorNumber = visitorDto.VisitorNumber,
+                    VisitorNumber = GenerateVisitorNo(),//visitorDto.VisitorNumber,
                     PhoneNumber = visitorDto.PhoneNumber,
                     Surname = visitorDto.Surname,
                     UserVerifyMode = visitorDto.UserVerifyMode,
@@ -123,7 +123,7 @@ namespace Api.Controllers
 
                 VMUserInfo vMUserInfo = new VMUserInfo()
                 {
-                    employeeNo = visitorDto.VisitorNumber,
+                    employeeNo = visitor.VisitorNumber,
                     deleteUser = false,
                     name = visitor.FirstName + " " + visitor.Surname,
                     userType = "normal",
@@ -147,6 +147,8 @@ namespace Api.Controllers
                     },
                     checkUser = true,
                     addUser = true,
+                    callNumbers = new List<string> { " 1-1-1-401" },
+                    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
                     gender = visitorDto.Gender switch
                     {
                         Enums.Gender.Male => "male",
@@ -158,6 +160,11 @@ namespace Api.Controllers
                 foreach (var device in devices)
                 {
                     var vService = await _visionMachineService.AddUser(device, vMUserInfo);
+                    var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                    if (res.StatusCode != 1)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                    }
                 }
 
 
@@ -173,9 +180,10 @@ namespace Api.Controllers
                         DeviceId = item.Oid,
                         OrganizationId = visitor.OrganizationId,
                         VisitorId = visitor.Oid,
+                        IsDeleted = false
 
                     };
-                    identifiedAssignDevices.AddRange(identifiedAssignDevices);
+                    identifiedAssignDevices.Add(identifiedAssignDevice);
                 }
 
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
@@ -272,22 +280,22 @@ namespace Api.Controllers
                 if (key != visitorDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
-                if (!visitorDto.AccessLevelId.HasValue && visitorDto.DeviceIdList.Length == 0)
+                if (!visitorDto.AccessLevelId.HasValue && visitorDto.DeviceIdList != null && visitorDto.DeviceIdList.Length == 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var visitorInDb = await context.VisitorRepository.GetVisitorByKey(visitorDto.Oid);
                 if (visitorInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                var visitorWithSameVisitorNo = await context.VisitorRepository.GetVisitorByVisitorNumber(visitorDto.VisitorNumber);
+                //var visitorWithSameVisitorNo = await context.VisitorRepository.GetVisitorByVisitorNumber(visitorDto.VisitorNumber);
 
-                if (visitorWithSameVisitorNo != null && visitorWithSameVisitorNo.OrganizationId == visitorDto.OrganizationId && visitorWithSameVisitorNo.Oid != visitorWithSameVisitorNo.Oid)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
+                //if (visitorWithSameVisitorNo != null && visitorWithSameVisitorNo.OrganizationId == visitorDto.OrganizationId && visitorWithSameVisitorNo.Oid != visitorWithSameVisitorNo.Oid)
+                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
 
-                var checkPersonNoWithSameVisitornNumer = await context.PersonRepository.GetPersonByPersonNumber(visitorDto.VisitorNumber);
+                //var checkPersonNoWithSameVisitornNumer = await context.PersonRepository.GetPersonByPersonNumber(visitorDto.VisitorNumber);
 
-                if (checkPersonNoWithSameVisitornNumer != null && checkPersonNoWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
+                //if (checkPersonNoWithSameVisitornNumer != null && checkPersonNoWithSameVisitornNumer.OrganizationId == visitorDto.OrganizationId)
+                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
 
 
 
@@ -324,7 +332,6 @@ namespace Api.Controllers
 
                 visitorInDb.FirstName = visitorDto.FirstName;
                 visitorInDb.Surname = visitorDto.Surname;
-                visitorInDb.VisitorNumber = visitorDto.VisitorNumber;
                 visitorInDb.PhoneNumber = visitorDto.PhoneNumber;
                 visitorInDb.Gender = visitorDto.Gender;
                 visitorInDb.Email = visitorDto.Email;
@@ -349,7 +356,7 @@ namespace Api.Controllers
 
                 VMUserInfo vMUserInfo = new VMUserInfo()
                 {
-                    employeeNo = visitorDto.VisitorNumber,
+                    employeeNo = visitorInDb.VisitorNumber,
                     deleteUser = false,
                     name = visitorDto.FirstName + " " + visitorDto.Surname,
                     userType = "normal",
@@ -378,8 +385,15 @@ namespace Api.Controllers
                         _ => "other"
                     }
                 };
-
+                List<int> visitorToBeUpdateInDevices = new List<int>();
+                List<int> visitorToBeAddedInDevices = new List<int>();
                 var identifiedAssignedDeviceByVisitor = await context.IdentifiedAssignDeviceRepository.QueryAsync(x => x.IsDeleted == false && x.VisitorId == visitorDto.Oid);
+
+                var newAssignedDevice = devices.Select(x => x.Oid).ToList();
+                var identifiedAlreadyAssignedDevice = identifiedAssignedDeviceByVisitor.Select(x => x.DeviceId).ToList();
+
+                visitorToBeUpdateInDevices = newAssignedDevice.Intersect(identifiedAlreadyAssignedDevice).ToList();
+                visitorToBeAddedInDevices = newAssignedDevice.Except(identifiedAlreadyAssignedDevice).ToList();
 
                 foreach (var item in identifiedAssignedDeviceByVisitor)
                     context.IdentifiedAssignDeviceRepository.Delete(new IdentifiedAssignDevice() { Oid = item.Oid });
@@ -395,14 +409,34 @@ namespace Api.Controllers
                         DeviceId = item.Oid,
                         OrganizationId = visitorDto.OrganizationId,
                         PersonId = visitorDto.Oid,
-
+                        IsDeleted = false
                     };
-                    identifiedAssignDevices.AddRange(identifiedAssignDevices);
+                    identifiedAssignDevices.Add(identifiedAssignDevice);
+                }
+                if (visitorToBeUpdateInDevices.Count() > 0)
+                {
+                    foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
+                    {
+                        var updated = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(updated);
+                        if (res.StatusCode != 1)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                        }
+                    }
                 }
 
-                foreach (var device in devices)
+                if (visitorToBeAddedInDevices.Count() > 0)
                 {
-                    var updated = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                    foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
+                    {
+                        var updated = await _visionMachineService.AddUser(device, vMUserInfo);
+                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(updated);
+                        if (res.StatusCode != 1)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                        }
+                    }
                 }
 
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
@@ -543,6 +577,24 @@ namespace Api.Controllers
             {
                 return false;
             }
+        }
+
+        private string GenerateVisitorNo()
+        {
+            // 1. Use shorter timestamp (Unix seconds instead of milliseconds)
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(); // 10 digits
+
+            // 2. Generate optimized random portion
+            var random = new Random();
+            var randomPart = random.Next(100000, 999999).ToString(); // 6 digits
+
+            // 3. Construct ID with ideal length (16-20 chars)
+            var id = $"Visit{timestamp}{randomPart}";
+
+            // 4. Ensure length is between 16-20 characters
+            id = id.Length > 20 ? id.Substring(0, 20) : id;
+
+            return id;
         }
     }
 }

@@ -19,6 +19,7 @@ namespace Infrastructure.Contracts
         public Task<Appointment> GetAppointmentByKey(Guid key);
         public Task<AppointmentReadDto> GetAppointmentByKeyInDto(Guid key);
         public Task<Appointment> GetActiveAppointmentByVisitor(Guid VisitorId);
+        public Task<Appointment> GetActiveAppointmentByVisitorAppointmentDateAndTime(Guid VisitorId, DateTime authenticationDate, TimeSpan authenticationTime);
 
         /// <summary>
         /// The method is used to get the list of Appointments.

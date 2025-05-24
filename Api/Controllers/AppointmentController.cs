@@ -65,7 +65,7 @@ namespace Api.Controllers
 
                 foreach (var personid in appointmentDto.PersonIds)
                 {
-                    var checkPersonId = await context.PersonImageRepository.FirstOrDefaultAsync(x => x.Oid == personid);
+                    var checkPersonId = await context.PersonRepository.FirstOrDefaultAsync(x => x.Oid == personid);
                     if (checkPersonId == null)
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNotFound);
                 }
@@ -117,7 +117,7 @@ namespace Api.Controllers
                         FirstName = appointmentDto.FirstName,
                         Gender = appointmentDto.Gender,
                         OrganizationId = appointmentDto.OrganizationId,
-                        VisitorNumber = GenerateVisitorNumber(),
+                        VisitorNumber = GenerateVisitorNo(),
                         PhoneNumber = appointmentDto.PhoneNumber,
                         Surname = appointmentDto.Surname,
                         UserVerifyMode = appointmentDto.VisitorVerifyMode,
@@ -143,7 +143,7 @@ namespace Api.Controllers
                         FirstName = appointmentDto.FirstName,
                         Gender = appointmentDto.Gender,
                         OrganizationId = appointmentDto.OrganizationId,
-                        VisitorNumber = GenerateVisitorNumber(),
+                        VisitorNumber = GenerateVisitorNo(),
                         PhoneNumber = appointmentDto.PhoneNumber,
                         Surname = appointmentDto.Surname,
                         UserVerifyMode = appointmentDto.VisitorVerifyMode,
@@ -202,6 +202,8 @@ namespace Api.Controllers
                     },
                     checkUser = true,
                     addUser = true,
+                    callNumbers = new List<string> { " 1-1-1-401" },
+                    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
                     gender = visitor.Gender switch
                     {
                         Enums.Gender.Male => "male",
@@ -214,6 +216,11 @@ namespace Api.Controllers
                     foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
                     {
                         var vService = await _visionMachineService.AddUser(device, vMUserInfo);
+                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                        if (res.StatusCode != 1)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                        }
                     }
                 }
                 if (visitorToBeUpdateInDevices.Count() > 0)
@@ -221,6 +228,11 @@ namespace Api.Controllers
                     foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
                     {
                         var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                        if (res.StatusCode != 1)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                        }
                     }
                 }
 
@@ -239,7 +251,7 @@ namespace Api.Controllers
                         VisitorId = visitor.Oid,
 
                     };
-                    identifiedAssignDevices.AddRange(identifiedAssignDevices);
+                    identifiedAssignDevices.Add(identifiedAssignDevice);
                 }
 
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
@@ -472,7 +484,7 @@ namespace Api.Controllers
                 visitorInDb.FirstName = appointmentDto.FirstName;
                 visitorInDb.Gender = appointmentDto.Gender;
                 visitorInDb.OrganizationId = appointmentDto.OrganizationId;
-                visitorInDb.VisitorNumber = GenerateVisitorNumber();
+                visitorInDb.VisitorNumber = GenerateVisitorNo();
                 visitorInDb.PhoneNumber = appointmentDto.PhoneNumber;
                 visitorInDb.Surname = appointmentDto.Surname;
                 visitorInDb.UserVerifyMode = appointmentDto.VisitorVerifyMode;
@@ -503,8 +515,8 @@ namespace Api.Controllers
                         OrganizationId = visitorInDb.OrganizationId,
                         VisitorId = visitorInDb.Oid,
 
-                    };
-                    identifiedAssignDevices.AddRange(identifiedAssignDevices);
+                    };  
+                    identifiedAssignDevices.Add(identifiedAssignDevice);
                 }
 
 
@@ -535,6 +547,8 @@ namespace Api.Controllers
                     doorRight = "1",
                     RightPlan = vMDoorPermissionSchedules,
                     localUIRight = false,
+                    callNumbers = new List<string> { " 1-1-1-401" },
+                    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
                     userVerifyMode = visitorInDb.UserVerifyMode switch
                     {
                         Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
@@ -554,6 +568,11 @@ namespace Api.Controllers
                     foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
                     {
                         var vService = await _visionMachineService.AddUser(device, vMUserInfo);
+                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                        if (res.StatusCode != 1)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                        }
                     }
                 }
                 if (visitorToBeUpdateInDevices.Count() > 0)
@@ -561,6 +580,12 @@ namespace Api.Controllers
                     foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
                     {
                         var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                        var updated = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(updated);
+                        if (res.StatusCode != 1)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                        }
                     }
                 }
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
@@ -587,17 +612,22 @@ namespace Api.Controllers
                 return false;
             }
         }
-        private string GenerateVisitorNumber()
+        private string GenerateVisitorNo()
         {
-            // Use a timestamp and a short GUID segment for uniqueness
-            string prefix = "Visitor-";
-            string timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss"); // 14 characters
-            string randomPart = Guid.NewGuid().ToString("N").Substring(0, 18); // 18 characters
+            // 1. Use shorter timestamp (Unix seconds instead of milliseconds)
+            var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(); // 10 digits
 
-            string visitorNumber = prefix + timestamp + randomPart;
+            // 2. Generate optimized random portion
+            var random = new Random();
+            var randomPart = random.Next(100000, 999999).ToString(); // 6 digits
 
-            // Ensure total length is not more than 40
-            return visitorNumber.Length > 40 ? visitorNumber.Substring(0, 40) : visitorNumber;
+            // 3. Construct ID with ideal length (16-20 chars)
+            var id = $"Visit{timestamp}{randomPart}";
+
+            // 4. Ensure length is between 16-20 characters
+            id = id.Length > 20 ? id.Substring(0, 20) : id;
+
+            return id;
         }
     }
 }

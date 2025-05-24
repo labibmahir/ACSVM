@@ -97,12 +97,12 @@ namespace Api.BackGroundServices
                                                 var now = DateTime.Now;
 
                                                 Person? getPersonByPersonNumber = new Person();
-                                                //  Visitor? getVisitorByPersonNumber = new Visitor();
+                                                Visitor? getVisitorByVisitorNumber = new Visitor();
                                                 getPersonByPersonNumber = await context.PersonRepository.GetPersonByPersonNumber(item.EmployeeNo);
-                                                //if (getPersonByPersonNumber == null)
-                                                //{
-                                                //    getVisitorByPersonNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
-                                                //}
+                                                if (getPersonByPersonNumber == null)
+                                                {
+                                                    getVisitorByVisitorNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
+                                                }
                                                 Attendance recentAttendance = null; ;
                                                 if (getPersonByPersonNumber != null)
                                                 {
@@ -151,6 +151,16 @@ namespace Api.BackGroundServices
                                                         var added = context.AttendanceRepository.Add(accessControllEvent);
 
                                                         await context.SaveChangesAsync();
+                                                    }
+                                                }
+                                                else if (getVisitorByVisitorNumber != null)
+                                                {
+                                                    var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(getVisitorByVisitorNumber.Oid, item.EventTime.DateTime, item.EventTime.TimeOfDay);
+                                                    if (checkAppointment != null)
+                                                    {
+                                                        var assignAppointment = await context.IdentifiedAssignedAppointmentRepository.GetIdentifiedAssignedAppointmentByAppointment(checkAppointment.Oid);
+                                                        await _attendanceAggrigator.SendAppointmentNotification(getVisitorByVisitorNumber, assignAppointment.Select(x => x.PersonId).ToList());
+
                                                     }
                                                 }
                                             }

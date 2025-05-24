@@ -69,5 +69,18 @@
             
             card = 3
         }
+
+        public enum DatabaseType
+        {
+            MySQL = 1,
+
+            SQLServer = 2,
+
+            Oracle = 3,
+
+            PostgreSQL = 4,
+
+            CustomSQLServer = 5
+        }
     }
 }

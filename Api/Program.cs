@@ -4,6 +4,7 @@ using Api.BackGroundServices.ProcessImplimentations;
 using Api.NotificationHub;
 using Infrastructure;
 using Infrastructure.Contracts;
+using Infrastructure.Helper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -71,12 +72,14 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddDbContext<DataContext>(x => x.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
-
+builder.Services.AddScoped<CustomConnectionStringService>();
+builder.Services.AddScoped<DynamicDbContextFactory>();
 builder.Services.AddSingleton<IHikVisionMachineService, HikVisionMachineService>();
 builder.Services.AddSingleton<ICustomHttpClientBuilder, CustomHttpClientBuilder>();
 builder.Services.AddSingleton<IProgressManager, ProgressManager>();
 builder.Services.AddHostedService<Syncronizer>();
 builder.Services.AddHostedService<AttendanceSyncronizer>();
+builder.Services.AddHostedService<DataExchangeSyncronizer>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options => options.AddPolicy("AllowAll", builder =>
 {

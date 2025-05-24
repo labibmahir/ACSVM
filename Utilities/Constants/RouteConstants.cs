@@ -142,5 +142,16 @@ namespace Utilities.Constants
         public const string DeleteAppointment = "appointment/{key}";
         #endregion
 
+        #region ClientDBDetail
+        public const string CreateClientDBDetail = "clientdbdetail";
+
+        public const string ReadClientDBDetails = "clientdbdetails";
+
+        public const string ReadClientDBDetailByKey = "clientdbdetail/key/{key}";
+
+        public const string UpdateClientDBDetail = "clientdbdetail/{key}";
+
+        public const string DeleteClientDBDetail = "clientdbdetail/{key}";
+        #endregion
     }
 }
