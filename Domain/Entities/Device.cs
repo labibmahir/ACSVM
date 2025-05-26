@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Domain.Entities;
 
@@ -50,6 +51,7 @@ public class Device : BaseModel
     [ForeignKey("AccessLevelId")]
     public virtual AccessLevel AccessLevel { get; set; }
 
+    [JsonIgnore]
     public virtual IEnumerable<IdentifiedAssignDevice> IdentifiedAssignDevices { get; set; }
 
     [NotMapped]

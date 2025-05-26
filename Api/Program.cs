@@ -21,11 +21,11 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = "JwtBearer";
-    options.DefaultChallengeScheme = "JwtBearer";
-    options.DefaultScheme = "JwtBearer"; // optional but safe
-})
+    {
+        options.DefaultAuthenticateScheme = "JwtBearer";
+        options.DefaultChallengeScheme = "JwtBearer";
+        options.DefaultScheme = "JwtBearer"; // optional but safe
+    })
     .AddJwtBearer("JwtBearer", options =>
     {
         options.SaveToken = true;
@@ -33,7 +33,8 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["JwtSettings:SecurityKey"])),
+            IssuerSigningKey =
+                new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["JwtSettings:SecurityKey"])),
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
@@ -91,11 +92,10 @@ builder.Services.AddCors(options => options.AddPolicy("AllowAll", builder =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");

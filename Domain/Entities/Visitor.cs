@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using Utilities.Constants;
 
 namespace Domain.Entities;
@@ -35,13 +36,19 @@ public class Visitor : BaseModel
     public DateTime ValidateEndPeriod { get; set; }
 
     public Enums.UserVerifyMode? UserVerifyMode { get; set; }
+    
+    [JsonIgnore]
     public virtual IEnumerable<Appointment> Appointments { get; set; }
 
+    [JsonIgnore]
     public virtual IEnumerable<FingerPrint> FingerPrints { get; set; }
 
+    [JsonIgnore]
     public virtual IEnumerable<IdentifiedAssignCard> IdentifiedAssignCards { get; set; }
 
+    [JsonIgnore]
     public virtual IEnumerable<IdentifiedAssignDevice> IdentifiedAssignDevices { get; set; }
 
+    [JsonIgnore]
     public virtual IEnumerable<PersonImage> PersonImages { get; set; }
 }

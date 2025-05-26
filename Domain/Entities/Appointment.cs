@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Domain.Entities;
 
@@ -32,5 +33,6 @@ public class Appointment : BaseModel
     [ForeignKey("VisitorId")]
     public virtual Visitor Vistor { get; set; }
     
+    [JsonIgnore]
     public virtual IEnumerable<IdentifiedAssignedAppointment> IdentifiedAssignedAppointments { get; set; }
 }

@@ -155,7 +155,7 @@ namespace Api.Controllers
         [HttpPut]
         [Route(RouteConstants.UpdateUserAccount)]
         [Authorize]
-        public async Task<IActionResult> UpdateUserAccount(Guid key, UserAccount userAccount)
+        public async Task<IActionResult> UpdateUserAccount(Guid key, UserAccountDto userAccount)
         {
             try
             {
@@ -179,10 +179,8 @@ namespace Api.Controllers
                 userInDb.Surname = userAccount.Surname;
                 userInDb.CountryCode = userAccount.CountryCode;
                 userInDb.CellPhone = userAccount.CellPhone;
-                userInDb.DateModified = DateTime.Now;
                 userInDb.ModifiedBy = userAccount.ModifiedBy;
-                userInDb.IsAccountActive = userAccount.IsAccountActive;
-                userInDb.OrganizationId = userAccount.OrganizationId;
+                userInDb.DateModified = DateTime.Now;
 
                 context.UserAccountRepository.Update(userInDb);
                 await context.SaveChangesAsync();

@@ -163,7 +163,7 @@ namespace Api.Controllers
                 accessLevelInDb.DateModified = DateTime.Now;
                 accessLevelInDb.ModifiedBy = GetLoggedInUserId();
 
-                context.AccessLevelRepository.Update(accessLevel);
+                context.AccessLevelRepository.Update(accessLevelInDb);
                 await context.SaveChangesAsync();
 
                 return StatusCode(StatusCodes.Status204NoContent);
