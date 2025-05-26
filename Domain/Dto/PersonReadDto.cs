@@ -31,5 +31,9 @@ namespace Domain.Dto
         public Enums.UserVerifyMode? UserVerifyMode { get; set; }
         public string? imageBase64 { get; set; }
         public List<FingerPrint>? FingerPrints { get; set; }
+        public int AssignedDevicesCount { get; set; }
+        public int FingerPrintCount { get; set; }
+        public int AssignedCardCount { get; set; }
+        public int ImagesCount { get; set; }
     }
 }

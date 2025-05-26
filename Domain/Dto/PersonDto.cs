@@ -13,7 +13,7 @@ namespace Domain.Dto
     {
         public Guid Oid { get; set; }
 
-        public int? AccessLevelId { get; set; }
+        public int[] AccessLevelIds { get; set; }
         public int[] DeviceIdList { get; set; }
         public int? OrganizationId { get; set; }
 

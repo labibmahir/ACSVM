@@ -1,4 +1,5 @@
-﻿using Domain.Dto.PaginationFiltersDto;
+﻿using Domain.Dto;
+using Domain.Dto.PaginationFiltersDto;
 using Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -44,8 +45,9 @@ namespace Infrastructure.Contracts
         /// /// <param name="DeviceIP">IP of a Device.</param>
         /// <returns>Returns a Device if the AccessLevelId is matched.</returns>
         public Task<IEnumerable<Device>> GetDevicesByAccessLevel(int AccessLevelId);
+        public Task<IEnumerable<Device>> GetDevicesByAccessLevels(int[] AccessLevelIds);
         public Task<IEnumerable<Device>> GetDevicesByDeviceIds(int[] DeviceIds);
-        public Task<IEnumerable<Device>> GetDevices(DeviceFilterDto deviceFilterDto);
+        public Task<IEnumerable<DeviceReadDto>> GetDevices(DeviceFilterDto deviceFilterDto);
         public Task<int> GetDeviceCount(DeviceFilterDto deviceFilterDto);
     }
 }

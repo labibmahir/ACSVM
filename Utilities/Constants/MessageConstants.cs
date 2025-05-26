@@ -27,6 +27,8 @@ namespace Utilities.Constants
         public const string PersonNotFound = "Person Not does not exists!";
         public const string VisitorNumberTaken = "Visitor Number already exists!";
         public const string CardNumberTake = "Card Number already exists!";
+        public const string CardAlreadyAllocated = "Card is already allocated!";
+        public const string CardCurrenlyActive = "Card is currently in use of visitor!";
         public const string DeviceCannotBeDeleted = "Device Cannot be deleted because its been assigned to some users!";
         public const string CardCannotBeDeleted = "Card Cannot be deleted because its been assigned to some users!";
         public const string InvalidParameterError = "Invalid parameter(s)!";

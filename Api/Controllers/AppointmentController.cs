@@ -345,6 +345,29 @@ namespace Api.Controllers
         }
 
         /// <summary>
+        /// URL:api/appointments/last-appointment-by-visitor-number/{VisitorNumber}
+        /// </summary>
+        /// <returns>A list of appointments.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadLastAppointmentByVisitorNo)]
+        public async Task<IActionResult> ReadLastAppointmentByVisitorNo(string VisitorNumber)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(VisitorNumber))
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
+
+                var appointments = await context.AppointmentRepository.GetLastAppointmentByVisitorNo(VisitorNumber);
+
+                return Ok(appointments);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
         /// URL: api/appointment/key/{key}
         /// </summary>
         /// <param name="key">Primary key of the table appointment.</param>
@@ -515,7 +538,7 @@ namespace Api.Controllers
                         OrganizationId = visitorInDb.OrganizationId,
                         VisitorId = visitorInDb.Oid,
 
-                    };  
+                    };
                     identifiedAssignDevices.Add(identifiedAssignDevice);
                 }
 

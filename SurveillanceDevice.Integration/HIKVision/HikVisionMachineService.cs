@@ -516,7 +516,35 @@ namespace SurveillanceDevice.Integration.HIKVision
             }
         }
 
+        public async Task<(bool Success, string Message)> DeleteCard(Device device, VMCardInfoDeleteRequest req)
+        {
+            var _client = _clientBuilder.GetCustomHttpClient(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password);
+            try
+            {
+                var putData = new
+                {
+                    CardInfoDelCond = req
+                };
 
+                var response = await _client.PutAsync("/ISAPI/AccessControl/CardInfo/Delete?format=json",
+                    new StringContent(JsonConvert.SerializeObject(putData), Encoding.UTF8, "application/json"));
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseText = await response.Content.ReadAsStringAsync();
+                    return (true, responseText); // Return success with the response message
+                }
+                else
+                {
+                    var errorText = await response.Content.ReadAsStringAsync();
+                    return (false, $"Failed to delete card. Status code: {response.StatusCode}, Response: {errorText}");
+                }
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error when deleting card: {ex.Message}"); // Return failure with the error message
+            }
+        }
         #endregion Card
 
 

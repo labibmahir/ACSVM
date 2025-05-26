@@ -84,7 +84,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadUserAccountByKey)]
-        [Authorize]
+       // [Authorize]
         public async Task<IActionResult> ReadUserAccountByKey(Guid key)
         {
             try
@@ -112,7 +112,7 @@ namespace Api.Controllers
         /// <returns>A list of user accounts.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadUserAccounts)]
-        [Authorize]
+       // [Authorize]
         public async Task<IActionResult> ReadUserAccount([FromQuery] UserAccountFilterDto userAccountFilterDto)
         {
             try
@@ -154,7 +154,7 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateUserAccount)]
-        [Authorize]
+       // [Authorize]
         public async Task<IActionResult> UpdateUserAccount(Guid key, UserAccountDto userAccount)
         {
             try

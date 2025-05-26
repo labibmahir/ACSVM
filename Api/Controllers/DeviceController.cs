@@ -87,7 +87,7 @@ namespace Api.Controllers
                 if (device == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                device.DeviceCurrectActiveStatus = await IsDeviceActive(device.DeviceIP);
+                //  device.DeviceCurrectActiveStatus = await IsDeviceActive(device.DeviceIP);
 
                 return Ok(device);
             }
@@ -109,10 +109,10 @@ namespace Api.Controllers
             {
                 if (deviceFilterDto.PageSize == 0)
                 {
-                    var devices = await context.DeviceRepository.GetDevices();
+                    var devices = await context.DeviceRepository.GetDevices();//add accessLevelName
 
-                    foreach (var device in devices)
-                        device.DeviceCurrectActiveStatus = await IsDeviceActive(device.DeviceIP);
+                    //foreach (var device in devices)
+                    //    device.DeviceCurrectActiveStatus = await IsDeviceActive(device.DeviceIP);
 
                     return Ok(devices);
                 }
@@ -120,12 +120,12 @@ namespace Api.Controllers
                 {
                     int currentPage = deviceFilterDto.Page;
                     deviceFilterDto.Page = ((deviceFilterDto.Page - 1) * (deviceFilterDto.PageSize));
-                    var devices = await context.DeviceRepository.GetDevices(deviceFilterDto);
+                    var devices = await context.DeviceRepository.GetDevices(deviceFilterDto);//add accessLevelName
 
-                    foreach (var device in devices)
-                        device.DeviceCurrectActiveStatus = await IsDeviceActive(device.DeviceIP);
+                    //foreach (var device in devices)
+                    //    device.DeviceCurrectActiveStatus = await IsDeviceActive(device.DeviceIP);
 
-                    PagedResultDto<Device> devicesDto = new PagedResultDto<Device>()
+                    PagedResultDto<DeviceReadDto> devicesDto = new PagedResultDto<DeviceReadDto>()
                     {
                         Data = devices.ToList(),
                         PageNumber = currentPage,

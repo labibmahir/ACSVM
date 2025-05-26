@@ -39,13 +39,15 @@ namespace Api.BackGroundServices
                     var visionMachineService = scope.ServiceProvider.GetRequiredService<IHikVisionMachineService>();
                     var devicesList = await context.DeviceRepository.QueryAsync(x => x.IsDeleted == false);
                     devices = devicesList.ToList();
-                    #region ACSEvent
+
                     foreach (var device in devices)
                     {
                         if (!await IsDeviceActive(device.DeviceIP))
                         {
                             continue;
                         }
+                        #region ACSEvent
+
                         // Processing ACS Event Data
                         DateTime startTime = DateTime.Now.AddMinutes(-1);
                         DateTime endTime = startTime.AddMinutes(1);
@@ -179,15 +181,71 @@ namespace Api.BackGroundServices
                                 startTime = startTime.AddDays(1);
                                 endTime = startTime.AddDays(1);
 
+
+
                             }
                             catch (Exception ex)
                             {
 
                             }
                         }
+                        #endregion
+
                     }
+                    #region Visitor CardAssignment
+                    var assignedCards = await context.IdentifiedAssignCardRepository.GetAllInActiveVisitorIdentifiedAssignCards();
+                    foreach (var item in assignedCards)
+                    {
+                        var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(item.VisitorId.Value, DateTime.Now.Date, DateTime.Now.TimeOfDay);
+                        VMCardInfo vMCardInfo = new VMCardInfo()
+                        {
+                            addCard = true,
+                            cardNo = item.Card.CardNumber,
+                            cardType = "normalCard",
+                            employeeNo = item.Visitor.VisitorNumber
+                        };
+                        var assignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(item.VisitorId.Value);
+                        foreach (var assignDevice in assignedDevices)
+                        {
+                            var result = await visionMachineService.AddCard(assignDevice.Device, vMCardInfo);
+
+                            if (!result.Success)
+                            {
+
+                            }
+                        }
+                        Card card = item.Card;
+                        card.Status = Utilities.Constants.Enums.Status.Active;
+                        context.CardRepository.Update(card);
+                        await context.SaveChangesAsync();
+                    }
+
+                    var assignedActiveCards = await context.IdentifiedAssignCardRepository.GetAllInActiveVisitorIdentifiedAssignCards();
+                    foreach (var item in assignedCards)
+                    {
+                        var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(item.VisitorId.Value, DateTime.Now.Date, DateTime.Now.TimeOfDay);
+                        if (checkAppointment != null)
+                        {
+                            VMCardInfoDeleteRequest vMCardInfoDeleteRequest = new VMCardInfoDeleteRequest()
+                            {
+                                CardNoList = new List<VMCardNoListItem?>() { new VMCardNoListItem() { cardNo = item.Card.CardNumber } }
+                            };
+                            var assignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(item.VisitorId.Value);
+                            foreach (var assignDevice in assignedDevices)
+                            {
+                                var result = await visionMachineService.DeleteCard(assignDevice.Device, vMCardInfoDeleteRequest);
+                            }
+                            Card card = item.Card;
+                            card.Status = Utilities.Constants.Enums.Status.Inactive;
+                            context.CardRepository.Update(card);
+                            await context.SaveChangesAsync();
+                        }
+                    }
+
+                    #endregion
+
                 }
-                #endregion
+
 
 
 

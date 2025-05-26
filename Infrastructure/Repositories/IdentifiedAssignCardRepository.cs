@@ -38,6 +38,30 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+        public async Task<IEnumerable<IdentifiedAssignCard>> GetAllInActiveVisitorIdentifiedAssignCards()
+        {
+            try
+            {
+                return await context.IdentifiedAssignCards.Include(x => x.Card).Include(v => v.Visitor)
+                     .Where(x => x.IsDeleted == false && x.VisitorId != null && x.Card.Status == Utilities.Constants.Enums.Status.Inactive).ToListAsync();
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        public async Task<IEnumerable<IdentifiedAssignCard>> GetAllActiveVisitorIdentifiedAssignCards()
+        {
+            try
+            {
+                return await context.IdentifiedAssignCards.Include(x => x.Card).Include(v => v.Visitor)
+                     .Where(x => x.IsDeleted == false && x.VisitorId != null && x.Card.Status == Utilities.Constants.Enums.Status.Active).ToListAsync();
+            }
+            catch
+            {
+                throw;
+            }
+        }
 
     }
 }

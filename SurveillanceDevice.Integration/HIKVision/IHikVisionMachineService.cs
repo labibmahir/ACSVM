@@ -35,6 +35,7 @@ namespace SurveillanceDevice.Integration.HIKVision
 
         Task<VMCardInfoSearchResponse> GetCardsByEmployees(Device device, List<VMEmployeeNoListItem> employeeNoList, int searchResultPosition, int maxResults);
         Task<EmployeeCardCount> GetEmployeeCardCount(Device device, string EmployeeId);
+        Task<(bool Success, string Message)> DeleteCard(Device device, VMCardInfoDeleteRequest req);
 
         #endregion Cards
         #region Face

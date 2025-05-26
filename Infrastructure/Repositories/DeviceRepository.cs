@@ -1,4 +1,5 @@
-﻿using Domain.Dto.PaginationFiltersDto;
+﻿using Domain.Dto;
+using Domain.Dto.PaginationFiltersDto;
 using Domain.Entities;
 using Infrastructure.Contracts;
 using Microsoft.EntityFrameworkCore;
@@ -90,6 +91,18 @@ namespace Infrastructure.Repositories
             }
 
         }
+        public async Task<IEnumerable<Device>> GetDevicesByAccessLevels(int[] AccessLevelIds)
+        {
+            try
+            {
+                return await QueryAsync(x => x.IsDeleted == false && x.AccessLevelId != null && AccessLevelIds.Contains(x.AccessLevelId.Value));
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
         public async Task<IEnumerable<Device>> GetDevicesByDeviceIds(int[] DeviceIds)
         {
             try
@@ -102,7 +115,7 @@ namespace Infrastructure.Repositories
             }
 
         }
-        public async Task<IEnumerable<Device>> GetDevices(DeviceFilterDto deviceFilterDto)
+        public async Task<IEnumerable<DeviceReadDto>> GetDevices(DeviceFilterDto deviceFilterDto)
         {
             try
             {
@@ -149,7 +162,27 @@ namespace Infrastructure.Repositories
                 else
                     query = query.OrderBy(d => d.DateCreated);
 
-                var result = await query.Skip(deviceFilterDto.Page).Take(deviceFilterDto.PageSize)
+                var result = await query
+                    .Select(d => new DeviceReadDto()
+                    {
+                        AccessLevelId = d.AccessLevelId,
+                        AccessLevelName = d.AccessLevel.Description,
+                        DeviceIP = d.DeviceIP,
+                        DeviceName = d.DeviceName,
+                        DeviceLicence = d.DeviceLicence,
+                        FirmwareReleasedDate = d.FirmwareReleasedDate,
+                        FirmwareVersion = d.FirmwareVersion,
+                        IsActive = d.IsActive,
+                        MacAddress = d.MacAddress,
+                        ModelName = d.ModelName,
+                        Oid = d.Oid,
+                        Password = d.Password,
+                        Port = d.Port,
+                        SerialNumber = d.SerialNumber,
+                        Username = d.Username,
+
+                    })
+                    .Skip(deviceFilterDto.Page).Take(deviceFilterDto.PageSize)
                   .ToListAsync();
 
                 return result;

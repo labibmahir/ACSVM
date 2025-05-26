@@ -44,7 +44,9 @@ namespace Infrastructure.Repositories
         {
             try
             {
-                var query = context.Persons.AsNoTracking().Include(i => i.PeopleImages).Include(f => f.FingerPrints).Where(i => i.IsDeleted == false).AsQueryable();
+                var query = context.Persons.AsNoTracking().Include(i => i.PeopleImages).Include(f => f.FingerPrints)
+                    .Include(x => x.IdentifiedAssignCards).Include(x => x.IdentifiedAssignDevices)
+                    .Where(i => i.IsDeleted == false).AsQueryable();
 
                 if (!string.IsNullOrEmpty(personFilterDto.search))
                     query = query.Where(x => x.FirstName.ToLower().Contains(personFilterDto.search.ToLower().Trim()) || x.Surname.ToLower().Contains(personFilterDto.search.ToLower().Trim())
@@ -109,6 +111,10 @@ namespace Infrastructure.Repositories
                     UserVerifyMode = x.UserVerifyMode,
                     ValidateEndPeriod = x.ValidateEndPeriod,
                     ValidateStartPeriod = x.ValidateStartPeriod,
+                    AssignedDevicesCount = x.IdentifiedAssignDevices.Count(),
+                    AssignedCardCount = x.IdentifiedAssignCards.Count(),
+                    FingerPrintCount = x.FingerPrints.Count(),
+                    ImagesCount = x.PeopleImages.Count()
 
                 }).Skip(personFilterDto.Page).Take(personFilterDto.PageSize)
                   .ToListAsync();

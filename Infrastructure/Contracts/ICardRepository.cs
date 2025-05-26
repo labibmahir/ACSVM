@@ -28,6 +28,11 @@ namespace Infrastructure.Contracts
         public Task<int> GetCardCount(PaginationDto paginationDto);
 
         /// <summary>
+        /// The method is used to get the list of Available Cards.
+        /// </summary>
+        /// <returns>Returns a list of all Cards.</returns>
+        public Task<IEnumerable<Card>> GetAvailableCards();
+        /// <summary>
         /// The method is used to get a Card by cardNumber.
         /// </summary>
         /// <param name="cardNumber">deviceName of a user.</param>

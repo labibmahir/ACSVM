@@ -20,7 +20,6 @@ namespace Infrastructure.Contracts
         public Task<AppointmentReadDto> GetAppointmentByKeyInDto(Guid key);
         public Task<Appointment> GetActiveAppointmentByVisitor(Guid VisitorId);
         public Task<Appointment> GetActiveAppointmentByVisitorAppointmentDateAndTime(Guid VisitorId, DateTime authenticationDate, TimeSpan authenticationTime);
-
         /// <summary>
         /// The method is used to get the list of Appointments.
         /// </summary>
@@ -28,5 +27,6 @@ namespace Infrastructure.Contracts
         public Task<IEnumerable<Appointment>> GetAppointments();
         public Task<IEnumerable<AppointmentReadDto>> GetAppointments(AppointmentFilterDto appointmentFilterDto);
         public Task<int> GetAppointmentsCount(AppointmentFilterDto appointmentFilterDto);
+        public Task<VisitorLastAppointmentDetailDto> GetLastAppointmentByVisitorNo(string visitorNo);
     }
 }

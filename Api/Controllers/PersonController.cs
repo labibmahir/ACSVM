@@ -54,7 +54,7 @@ namespace Api.Controllers
         {
             try
             {
-                if (!personDto.AccessLevelId.HasValue && personDto.DeviceIdList != null && personDto.DeviceIdList.Length == 0)
+                if ((personDto.AccessLevelIds == null || personDto.AccessLevelIds.Length == 0) && (personDto.DeviceIdList == null || personDto.DeviceIdList.Length == 0))
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 //var personWithSamePersonNumer = await context.PersonRepository.GetPersonByPersonNumber(personDto.PersonNumber);
@@ -73,9 +73,9 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateIPError);
 
                 var devices = new List<Device>();
-                if (personDto.AccessLevelId.HasValue && personDto.AccessLevelId.Value > 0)
+                if (personDto.AccessLevelIds != null && personDto.AccessLevelIds.Count() > 0)
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId.Value);
+                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevels(personDto.AccessLevelIds);
                     devices = devicelist.ToList();
                 }
                 else
@@ -294,7 +294,7 @@ namespace Api.Controllers
                 if (key != personDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
-                if (!personDto.AccessLevelId.HasValue && personDto.DeviceIdList.Length == 0)
+                if (personDto.AccessLevelIds != null && personDto.AccessLevelIds.Count() > 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var personInDb = await context.PersonRepository.GetPersonByKey(personDto.Oid);
@@ -313,9 +313,9 @@ namespace Api.Controllers
 
 
                 var devices = new List<Device>();
-                if (personDto.AccessLevelId.HasValue && personDto.AccessLevelId.Value > 0)
+                if (personDto.AccessLevelIds != null && personDto.AccessLevelIds.Count() > 0)
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(personDto.AccessLevelId.Value);
+                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevels(personDto.AccessLevelIds);
                     devices = devicelist.ToList();
                 }
                 else

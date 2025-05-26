@@ -207,13 +207,43 @@ namespace Infrastructure.Repositories
         /// <param name="entity">Object to be updated.</param>
         public void Update(T entity)
         {
+            //try
+            //{
+            //    context.Entry(entity).State = EntityState.Modified;
+            //    context.Set<T>().Update(entity);
+            //}
+            //catch
+            //{
+            //    throw;
+            //}
             try
             {
+                var entry = context.Entry(entity);
+                if (entry.State == EntityState.Detached)
+                {
+                    var key = context.Model.FindEntityType(typeof(T)).FindPrimaryKey();
+                    var keyValues = key.Properties.Select(p => p.PropertyInfo.GetValue(entity)).ToArray();
+
+                    var trackedEntity = context.Set<T>().Local
+                        .FirstOrDefault(e =>
+                        {
+                            var trackedKeyValues = key.Properties.Select(p => p.PropertyInfo.GetValue(e)).ToArray();
+                            return trackedKeyValues.SequenceEqual(keyValues);
+                        });
+
+                    if (trackedEntity != null)
+                    {
+                        context.Entry(trackedEntity).State = EntityState.Detached;
+                    }
+
+                    context.Attach(entity);
+                }
+
                 context.Entry(entity).State = EntityState.Modified;
-                context.Set<T>().Update(entity);
             }
-            catch
+            catch (Exception ex)
             {
+                // You can log the exception here if needed
                 throw;
             }
         }

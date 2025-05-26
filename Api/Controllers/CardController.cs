@@ -39,19 +39,22 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreateCard)]
-        public async Task<ActionResult<Card>> CreateCard(Card card)
+        public async Task<ActionResult<Card>> CreateCard(CardDto cardDto)
         {
             try
             {
-                var cardWithSameCardNumber = await context.CardRepository.GetCardByCardNumber(card.CardNumber);
+                var cardWithSameCardNumber = await context.CardRepository.GetCardByCardNumber(cardDto.CardNumber);
 
-                if (cardWithSameCardNumber != null && cardWithSameCardNumber.OrganizationId == card.OrganizationId)
+                if (cardWithSameCardNumber != null)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardNumberTake);
 
+                Card card = new Card();
 
                 card.DateCreated = DateTime.Now;
                 card.IsDeleted = false;
                 card.CreatedBy = GetLoggedInUserId();
+                card.CardNumber = cardDto.CardNumber;
+                card.Status = Enums.Status.Inactive;
 
                 context.CardRepository.Add(card);
                 await context.SaveChangesAsync();
@@ -123,7 +126,8 @@ namespace Api.Controllers
                     }
                 }
                 context.IdentifiedAssignCardRepository.Add(identifiedAssignCard);
-
+                card.Status = Enums.Status.Allocated;
+                context.CardRepository.Update(card);
                 await context.SaveChangesAsync();
 
                 return Ok(card);
@@ -148,6 +152,12 @@ namespace Api.Controllers
 
                 if (card == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                if (card.Status == Enums.Status.Allocated)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardAlreadyAllocated);
+
+                if (card.Status == Enums.Status.Active)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardCurrenlyActive);
 
                 var visitor = await context.VisitorRepository.GetVisitorByKey(cardAssignmentToVisitorDto.VisitorId);
 
@@ -174,22 +184,22 @@ namespace Api.Controllers
                     CardId = cardAssignmentToVisitorDto.CardId
                 };
 
-                VMCardInfo vMCardInfo = new VMCardInfo()
-                {
-                    addCard = true,
-                    cardNo = card.CardNumber,
-                    cardType = "normalCard",
-                    employeeNo = visitor.VisitorNumber
-                };
-                foreach (var item in assignedDevices)
-                {
-                    var result = await _visionMachineService.AddCard(item.Device, vMCardInfo);
+                //VMCardInfo vMCardInfo = new VMCardInfo()
+                //{
+                //    addCard = true,
+                //    cardNo = card.CardNumber,
+                //    cardType = "normalCard",
+                //    employeeNo = visitor.VisitorNumber
+                //};
+                //foreach (var item in assignedDevices)
+                //{
+                //    var result = await _visionMachineService.AddCard(item.Device, vMCardInfo);
 
-                    if (!result.Success)
-                    {
+                //    if (!result.Success)
+                //    {
 
-                    }
-                }
+                //    }
+                //}
                 context.IdentifiedAssignCardRepository.Add(identifiedAssignCard);
 
                 await context.SaveChangesAsync();
@@ -220,6 +230,28 @@ namespace Api.Controllers
 
                 if (card == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                return Ok(card);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
+        /// URL: api/card/inactive-cards
+        /// </summary>
+        /// <param name="key">Primary key of the table Card.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadAllInActiveCards)]
+        public async Task<IActionResult> ReadAllInActiveCards()
+        {
+            try
+            {
+
+                var card = await context.CardRepository.GetAvailableCards();
 
                 return Ok(card);
             }
@@ -278,26 +310,25 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateCard)]
-        public async Task<IActionResult> UpdateCard(Guid key, Card card)
+        public async Task<IActionResult> UpdateCard(Guid key, CardDto cardDto)
         {
             try
             {
-                if (key != card.Oid)
+                if (key != cardDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
-                var cardWithSameCardNumber = await context.CardRepository.GetCardByCardNumber(card.CardNumber);
+                var cardWithSameCardNumber = await context.CardRepository.GetCardByCardNumber(cardDto.CardNumber);
 
-                if (cardWithSameCardNumber != null && cardWithSameCardNumber.OrganizationId == cardWithSameCardNumber.OrganizationId && cardWithSameCardNumber.Oid != card.Oid)
+                if (cardWithSameCardNumber != null && cardWithSameCardNumber.OrganizationId == cardWithSameCardNumber.OrganizationId && cardWithSameCardNumber.Oid != cardDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardNumberTake);
 
 
-                var cardInDb = await context.CardRepository.GetCardByKey(card.Oid);
+                var cardInDb = await context.CardRepository.GetCardByKey(cardDto.Oid);
 
                 if (cardInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                cardInDb.CardNumber = card.CardNumber;
-                cardInDb.Status = card.Status;
+                cardInDb.CardNumber = cardDto.CardNumber;
                 cardInDb.DateModified = DateTime.Now;
                 cardInDb.ModifiedBy = GetLoggedInUserId();
 

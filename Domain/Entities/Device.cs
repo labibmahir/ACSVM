@@ -54,6 +54,6 @@ public class Device : BaseModel
     [JsonIgnore]
     public virtual IEnumerable<IdentifiedAssignDevice> IdentifiedAssignDevices { get; set; }
 
-    [NotMapped]
-    public bool? DeviceCurrectActiveStatus { get; set; }
+    //[NotMapped]
+    //public bool? DeviceCurrectActiveStatus { get; set; }
 }

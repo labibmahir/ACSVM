@@ -105,6 +105,8 @@ namespace Utilities.Constants
 
         public const string ReadCards = "cards";
 
+        public const string ReadAllInActiveCards = "inactive-cards";
+
         public const string ReadCardByKey = "card/key/{key}";
 
         public const string UpdateCard = "card/{key}";
@@ -134,6 +136,8 @@ namespace Utilities.Constants
         public const string CreateAppointment = "appointment";
 
         public const string ReadAppointment = "appointments";
+
+        public const string ReadLastAppointmentByVisitorNo = "last-appointment-by-visitor-number/{VisitorNumber}";
 
         public const string ReadAppointmentByKey = "appointment/key/{key}";
 

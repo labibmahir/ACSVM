@@ -12,5 +12,7 @@ namespace Infrastructure.Contracts
     {
         public Task<IdentifiedAssignCard> GetIdentifiedAssignCardByPerson(Guid PersonId);
         public Task<IdentifiedAssignCard> GetIdentifiedAssignCardByVisitor(Guid VisitorId);
+        public Task<IEnumerable<IdentifiedAssignCard>> GetAllInActiveVisitorIdentifiedAssignCards();
+        public Task<IEnumerable<IdentifiedAssignCard>> GetAllActiveVisitorIdentifiedAssignCards();
     }
 }

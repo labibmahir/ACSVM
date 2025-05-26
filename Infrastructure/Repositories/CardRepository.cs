@@ -38,6 +38,17 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+        public async Task<IEnumerable<Card>> GetAvailableCards()
+        {
+            try
+            {
+                return await QueryAsync(x => x.IsDeleted == false && x.Status == Utilities.Constants.Enums.Status.Inactive);
+            }
+            catch
+            {
+                throw;
+            }
+        }
         public async Task<IEnumerable<Card>> GetCards(PaginationDto paginationDto)
         {
             try
