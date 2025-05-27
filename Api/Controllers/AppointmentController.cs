@@ -350,14 +350,14 @@ namespace Api.Controllers
         /// <returns>A list of appointments.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadLastAppointmentByVisitorNo)]
-        public async Task<IActionResult> ReadLastAppointmentByVisitorNo(string VisitorNumber)
+        public async Task<IActionResult> ReadLastAppointmentByVisitorNo(string visitorNumber)
         {
             try
             {
-                if (string.IsNullOrEmpty(VisitorNumber))
+                if (string.IsNullOrEmpty(visitorNumber))
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
 
-                var appointments = await context.AppointmentRepository.GetLastAppointmentByVisitorNo(VisitorNumber);
+                var appointments = await context.AppointmentRepository.GetLastAppointmentByVisitorNo(visitorNumber);
 
                 return Ok(appointments);
             }
