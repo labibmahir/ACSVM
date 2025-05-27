@@ -45,7 +45,7 @@ namespace Infrastructure.Repositories
             try
             {
                 var query = context.Persons.AsNoTracking().Include(i => i.PeopleImages).Include(f => f.FingerPrints)
-                    .Include(x => x.IdentifiedAssignCards).Include(x => x.IdentifiedAssignDevices)
+                    .Include(x => x.IdentifiedAssignCards).Include(x => x.IdentifiedAssignDevices).ThenInclude(x => x.Device).ThenInclude(x => x.AccessLevel)
                     .Where(i => i.IsDeleted == false).AsQueryable();
 
                 if (!string.IsNullOrEmpty(personFilterDto.search))
@@ -114,8 +114,15 @@ namespace Infrastructure.Repositories
                     AssignedDevicesCount = x.IdentifiedAssignDevices.Count(),
                     AssignedCardCount = x.IdentifiedAssignCards.Count(),
                     FingerPrintCount = x.FingerPrints.Count(),
-                    ImagesCount = x.PeopleImages.Count()
-
+                    ImagesCount = x.PeopleImages.Count(),
+                    IdentifiedDevices = context.IdentifiedAssignDevices.Where(i => i.PersonId == x.Oid).Select(d => new IdentifiedDevicesDto()
+                    {
+                        DeviceId = d.DeviceId,
+                        DeviceName = d.Device.DeviceName,
+                        AccessControlId = d.Device.AccessLevelId,
+                        AccessControlName = d.Device.AccessLevel.Description
+                    }).ToList()
+                    
                 }).Skip(personFilterDto.Page).Take(personFilterDto.PageSize)
                   .ToListAsync();
 

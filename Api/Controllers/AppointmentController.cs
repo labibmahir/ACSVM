@@ -48,7 +48,7 @@ namespace Api.Controllers
         {
             try
             {
-                if (!appointmentDto.AccessLevelId.HasValue && appointmentDto.DeviceIdList.Length == 0)
+                if (appointmentDto.AccessLevelList.Length == 0 && appointmentDto.DeviceIdList.Length == 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var visitorByPhone = await context.VisitorRepository.GetVisitorByphoneNumber(appointmentDto.PhoneNumber);
@@ -71,10 +71,16 @@ namespace Api.Controllers
                 }
 
                 var devices = new List<Device>();
-                if (appointmentDto.AccessLevelId.HasValue && appointmentDto.AccessLevelId.Value > 0)
+                if (appointmentDto.AccessLevelList.Length > 0)
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(appointmentDto.AccessLevelId.Value);
-                    devices = devicelist.ToList();
+                    var devicesbyAccess = new List<Device>();
+                    foreach (var item in appointmentDto.AccessLevelList)
+                    {
+                        var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(item);
+                        devicesbyAccess.AddRange(devicelist);
+                    }
+                    
+                    devices = devicesbyAccess.ToList();
                 }
                 else
                 {
@@ -97,10 +103,6 @@ namespace Api.Controllers
                     }
 
                 }
-
-                //if (devices.Count() <= 0)
-                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
-
 
                 List<int> visitorToBeUpdateInDevices = new List<int>();
                 List<int> visitorToBeAddedInDevices = new List<int>();
@@ -163,8 +165,8 @@ namespace Api.Controllers
                     visitorToBeAddedInDevices = newAssignedDevice.Except(identifiedAlreadyAssignedDevice).ToList();
                     foreach (var item in identifiedAssignedDeviceByVisitor)
                         context.IdentifiedAssignDeviceRepository.Delete(new IdentifiedAssignDevice() { Oid = item.Oid });
-
                 }
+                
                 List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
 
                 VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
@@ -410,7 +412,7 @@ namespace Api.Controllers
                 if (key != appointmentDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
-                if (!appointmentDto.AccessLevelId.HasValue && appointmentDto.DeviceIdList.Length == 0)
+                if (appointmentDto.AccessLevelList.Length == 0 && appointmentDto.DeviceIdList.Length == 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var appointmentInDb = await context.AppointmentRepository.GetAppointmentByKey(appointmentDto.Oid);
@@ -436,10 +438,16 @@ namespace Api.Controllers
                 }
 
                 var devices = new List<Device>();
-                if (appointmentDto.AccessLevelId.HasValue && appointmentDto.AccessLevelId.Value > 0)
+                if (appointmentDto.AccessLevelList.Length > 0)
                 {
-                    var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(appointmentDto.AccessLevelId.Value);
-                    devices = devicelist.ToList();
+                    var devicesbyAccess = new List<Device>();
+                    foreach (var item in appointmentDto.AccessLevelList)
+                    {
+                        var devicelist = await context.DeviceRepository.GetDevicesByAccessLevel(item);
+                        devicesbyAccess.AddRange(devicelist);
+                    }
+                    
+                    devices = devicesbyAccess.ToList();
                 }
                 else
                 {

@@ -27,6 +27,8 @@ namespace Domain.Dto
 
         //[MaxLength(50)]
         //public string PersonNumber { get; set; }
+        
+        public string Department { get; set; }
 
         [MaxLength(20)]
         public string Email { get; set; }

@@ -19,6 +19,7 @@ namespace Domain.Dto
         public string PersonNumber { get; set; }
         public string Email { get; set; }
 
+        public string Department { get; set; }
         public string PhoneNumber { get; set; }
         public Enums.Gender Gender { get; set; }
 
@@ -30,10 +31,25 @@ namespace Domain.Dto
 
         public Enums.UserVerifyMode? UserVerifyMode { get; set; }
         public string? imageBase64 { get; set; }
+        
+        public List<IdentifiedDevicesDto>? IdentifiedDevices { get; set; }
+        
         public List<FingerPrint>? FingerPrints { get; set; }
         public int AssignedDevicesCount { get; set; }
         public int FingerPrintCount { get; set; }
         public int AssignedCardCount { get; set; }
         public int ImagesCount { get; set; }
+    }
+
+    public class IdentifiedDevicesDto
+    {
+        public int? AccessControlId { get; set; }
+        
+        public int? DeviceId { get; set; }
+        
+        public string DeviceName { get; set; }
+        
+        public string AccessControlName { get; set; }
+        
     }
 }

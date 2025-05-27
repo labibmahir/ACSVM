@@ -14,7 +14,7 @@ namespace Domain.Dto
         [Key]
         public Guid Oid { get; set; }
 
-        public int? AccessLevelId { get; set; }
+        public int[] AccessLevelList { get; set; }
         public int[] DeviceIdList { get; set; }
 
         public Guid[] PersonIds { get; set; }

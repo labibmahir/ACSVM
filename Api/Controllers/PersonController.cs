@@ -4,16 +4,10 @@ using Domain.Dto;
 using Domain.Dto.HIKVision;
 using Domain.Dto.PaginationFiltersDto;
 using Domain.Entities;
-using Infrastructure;
 using Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SurveillanceDevice.Integration.HIKVision;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Net.NetworkInformation;
 using Utilities.Constants;
 
@@ -57,16 +51,6 @@ namespace Api.Controllers
                 if ((personDto.AccessLevelIds == null || personDto.AccessLevelIds.Length == 0) && (personDto.DeviceIdList == null || personDto.DeviceIdList.Length == 0))
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
-                //var personWithSamePersonNumer = await context.PersonRepository.GetPersonByPersonNumber(personDto.PersonNumber);
-
-                //if (personWithSamePersonNumer != null && personWithSamePersonNumer.OrganizationId == personDto.OrganizationId)
-                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
-
-                //var checkVisitornWithSamePersonNumer = await context.VisitorRepository.GetVisitorByVisitorNumber(personDto.PersonNumber);
-
-                //if (checkVisitornWithSamePersonNumer != null && checkVisitornWithSamePersonNumer.OrganizationId == personDto.OrganizationId)
-                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
-
                 var personWithSamePhone = await context.PersonRepository.GetPersonByphoneNumber(personDto.PhoneNumber);
 
                 if (personWithSamePhone != null && personWithSamePhone.OrganizationId == personDto.OrganizationId)
@@ -98,7 +82,6 @@ namespace Api.Controllers
                     FirstName = personDto.FirstName,
                     Gender = personDto.Gender,
                     OrganizationId = personDto.OrganizationId,
-                    //PersonNumber = personDto.PersonNumber,
                     PersonNumber = GeneratePersonNo(),
                     PhoneNumber = personDto.PhoneNumber,
                     Surname = personDto.Surname,
@@ -106,6 +89,7 @@ namespace Api.Controllers
                     UserVerifyMode = personDto.UserVerifyMode,
                     ValidateEndPeriod = personDto.ValidateEndPeriod,
                     ValidateStartPeriod = personDto.ValidateStartPeriod,
+                    Department = personDto.Department
 
                 };
 
@@ -244,6 +228,7 @@ namespace Api.Controllers
         /// <returns>A list of persons.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadPersons)]
+        [AllowAnonymous]
         public async Task<IActionResult> ReadPersons([FromQuery] PersonFilterDto personFilterDto)
         {
             try
@@ -294,23 +279,12 @@ namespace Api.Controllers
                 if (key != personDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
 
-                if (personDto.AccessLevelIds != null && personDto.AccessLevelIds.Count() > 0)
+                if (personDto.AccessLevelIds != null && personDto.AccessLevelIds.Count() == 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var personInDb = await context.PersonRepository.GetPersonByKey(personDto.Oid);
                 if (personInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
-
-                //var personWithSamePersoneNo = await context.PersonRepository.GetPersonByPersonNumber(personDto.PersonNumber);
-
-                //if (personWithSamePersoneNo != null && personWithSamePersoneNo.OrganizationId == personDto.OrganizationId && personWithSamePersoneNo.Oid != personDto.Oid)
-                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
-
-                //var checkVisitornWithSamePersonNumer = await context.VisitorRepository.GetVisitorByVisitorNumber(personDto.PersonNumber);
-
-                //if (checkVisitornWithSamePersonNumer != null && checkVisitornWithSamePersonNumer.OrganizationId == personDto.OrganizationId)
-                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNumberTaken);
-
 
                 var devices = new List<Device>();
                 if (personDto.AccessLevelIds != null && personDto.AccessLevelIds.Count() > 0)
@@ -357,6 +331,7 @@ namespace Api.Controllers
                 personInDb.OrganizationId = personDto.OrganizationId;
                 personInDb.DateModified = DateTime.Now;
                 personInDb.ModifiedBy = GetLoggedInUserId();
+                personInDb.Department = personDto.Department;
 
                 List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
 

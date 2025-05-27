@@ -21,7 +21,7 @@ public class Person : BaseModel
     [MaxLength(50)]
     public string PersonNumber { get; set; }
 
-    [MaxLength(20)]
+    [MaxLength(50)]
     public string Email { get; set; }
 
     [MaxLength(15)]

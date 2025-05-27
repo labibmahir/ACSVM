@@ -11,9 +11,6 @@ public class PersonImage : BaseModel
     [Required]
     public string ImageBase64 { get; set; }
 
-    //[Required]
-    // public string ImageData { get; set; }
-
     [Required]
     public byte[] ImageData { get; set; }
 

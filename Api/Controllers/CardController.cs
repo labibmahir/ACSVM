@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Utilities.Constants;
 using Domain.Dto.HIKVision;
 using System.Net.NetworkInformation;
+using Microsoft.AspNetCore.Authorization;
 using SurveillanceDevice.Integration.HIKVision;
 
 namespace Api.Controllers
@@ -310,6 +311,7 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateCard)]
+        [AllowAnonymous]
         public async Task<IActionResult> UpdateCard(Guid key, CardDto cardDto)
         {
             try

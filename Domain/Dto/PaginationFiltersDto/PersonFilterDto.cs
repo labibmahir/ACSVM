@@ -12,7 +12,10 @@ namespace Domain.Dto.PaginationFiltersDto
     {
         public string? FirstName { get; set; }
         public string? Surname { get; set; }
+        
         public string? PersonNumber { get; set; }
+        
+        public string? Name { get; set; }
 
         public string? Email { get; set; }
 
