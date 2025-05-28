@@ -99,6 +99,7 @@ namespace Api.Controllers
                     if (!await IsDeviceActive(device.DeviceIP))
                     {
                         devices = devices.Where(x => x.Oid != device.Oid).ToList();
+                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
                     }
 
                 }
@@ -350,6 +351,7 @@ namespace Api.Controllers
                     if (!await IsDeviceActive(device.DeviceIP))
                     {
                         devices = devices.Where(x => x.Oid != device.Oid).ToList();
+                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
                     }
 
                 }
