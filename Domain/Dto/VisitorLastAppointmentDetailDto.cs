@@ -25,6 +25,7 @@ namespace Domain.Dto
         public bool IsCancelled { get; set; }
         public Visitor Vistor { get; set; }
         public Guid VisitorId { get; set; }
+        public string VisitorImageBase64 { get; set; }
         public List<Person> Persons { get; set; }
         public List<Device> AssignedDevicesToVisitor { get; set; }
      //   public List<int> AssignedDevicesIdToVisitor { get; set; }

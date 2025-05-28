@@ -17,7 +17,7 @@ namespace Api.Controllers
         private readonly ILogger<PersonImageController> logger;
         private readonly IConfiguration _configuration;
         private readonly IHikVisionMachineService _visionMachineService;
-        
+
         /// <summary>
         /// Default constructor.
         /// </summary>
@@ -189,7 +189,6 @@ namespace Api.Controllers
                     Oid = Guid.NewGuid(),
                     IsDeleted = false,
                 };
-
                 FacePictureUploadDto vMPersonImageSetUpRequest = new FacePictureUploadDto()
                 {
                     faceLibType = "blackFD",
@@ -264,7 +263,7 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
 
                 var personImage = await context.PersonImageRepository.GetImageByPersonId(PersonId);
-                
+
                 return Ok(personImage);
             }
             catch (Exception ex)

@@ -264,6 +264,47 @@ namespace Api.Controllers
         }
 
         /// <summary>
+        /// URL:api/persons
+        /// </summary>
+        /// <returns>A list of persons.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadPersonsMinifiedData)]
+        [AllowAnonymous]
+        public async Task<IActionResult> ReadPersonsMinifiedData([FromQuery] PersonNoAndPernameNameFilterDto personFilterDto)
+        {
+            try
+            {
+                if (personFilterDto.PageSize == 0)
+                {
+                    var persons = await context.PersonRepository.GetPersons();
+
+                    return Ok(persons);
+                }
+                else
+                {
+                    int currentPage = personFilterDto.Page;
+                    personFilterDto.Page = ((personFilterDto.Page - 1) * (personFilterDto.PageSize));
+                    var persons = await context.PersonRepository.GetPersons(personFilterDto);
+
+                    PagedResultDto<PersonMinifiedDataDto> personDto = new PagedResultDto<PersonMinifiedDataDto>()
+                    {
+                        Data = persons.ToList(),
+                        PageNumber = currentPage,
+                        PageSize = personFilterDto.PageSize,
+                        TotalItems = await context.PersonRepository.GetPersonsCount(personFilterDto)
+                    };
+
+                    return Ok(personDto);
+
+                }
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
         /// URL: api/person/{key}
         /// </summary>
         /// <param name="key">Primary key of the table person.</param>
@@ -582,6 +623,41 @@ namespace Api.Controllers
             }
         }
 
+        /// <summary>
+        /// URL: api/person
+        /// </summary>
+        /// <param name="ExportPeopleToDevice">ExportPeopleToDevice object.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpPost]
+        [Route(RouteConstants.ExportPeopleToDevice)]
+        public async Task<ActionResult<Person>> ExportToDevice(ExportToDeviceDto exportToDeviceDto)
+        {
+            try
+            {
+                var fromDevice = await context.DeviceRepository.GetDeviceByKey(exportToDeviceDto.FromDeviceId);
+                if (fromDevice == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+                }
+                var toDevice = await context.DeviceRepository.GetDeviceByKey(exportToDeviceDto.FromDeviceId);
+                if (toDevice == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+                }
+                if (!await IsDeviceActive(toDevice.DeviceIP))
+                {
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.SelectedDeviceNotActive);
+                }
+
+                IProcess importPeople = new ExportPeopleToDeviceProcess(exportToDeviceDto, ProcessPriority.Urgent);
+                await progressManager.AddProcess(importPeople);
+                return Ok(exportToDeviceDto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
         private async Task<bool> IsDeviceActive(string ipAddress)
         {
             try

@@ -29,9 +29,11 @@ namespace Infrastructure.Contracts
         /// <returns>Returns a list of all Persons.</returns>
         public Task<IEnumerable<Person>> GetPersons();
         public Task<IEnumerable<PersonReadDto>> GetPersons(PersonFilterDto personFilterDto);
+
         public Task<int> GetPersonsCount(PersonFilterDto personFilterDto);
         public Task<Person> GetPersonByPersonNumber(string personNumber);
-
+        public Task<IEnumerable<PersonMinifiedDataDto>> GetPersons(PersonNoAndPernameNameFilterDto personNoAndPernameNameFilterDto);
+        public Task<int> GetPersonsCount(PersonNoAndPernameNameFilterDto personNoAndPernameNameFilterDto);
         /// <summary>
         /// The method is used to get a person by phoneNumber.
         /// </summary>

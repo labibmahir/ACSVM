@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Utilities.Constants;
+using Microsoft.AspNetCore.Http;
 
 namespace Domain.Dto
 {
@@ -52,6 +53,8 @@ namespace Domain.Dto
         public TimeSpan EndTime { get; set; }
 
         public Enums.UserVerifyMode? VisitorVerifyMode { get; set; }
+
+        public IFormFile Image { get; set; }
         //[Required]
         //public bool IsCompleted { get; set; }
 

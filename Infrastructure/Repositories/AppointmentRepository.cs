@@ -96,7 +96,8 @@ namespace Infrastructure.Repositories
             try
             {
 
-                var query = context.Appointments.AsNoTracking().Include(v => v.Vistor).Include(i => i.IdentifiedAssignedAppointments).AsQueryable();
+                var query = context.Appointments.AsNoTracking().Include(v => v.Vistor).ThenInclude(i => i.PersonImages)
+                    .Include(i => i.IdentifiedAssignedAppointments).Include(v => v.Vistor).ThenInclude(id => id.IdentifiedAssignDevices).AsQueryable();
 
 
                 if (!string.IsNullOrEmpty(appointmentFilterDto.search))
@@ -128,6 +129,7 @@ namespace Infrastructure.Repositories
                     StartTime = x.StartTime,
                     Vistor = x.Vistor,
                     VisitorId = x.VisitorId,
+                    VisitorImageBase64 = x.Vistor.PersonImages.FirstOrDefault() == null ? "" : x.Vistor.PersonImages.FirstOrDefault().ImageBase64,
                     Persons = x.IdentifiedAssignedAppointments.Select(p => new Person()
                     {
                         FirstName = p.Person.FirstName,
@@ -135,11 +137,20 @@ namespace Infrastructure.Repositories
                         Gender = p.Person.Gender,
                         Department = p.Person.Department,
                     }).ToList(),
-
+                    AssignedDevicesToVisitor = x.Vistor.IdentifiedAssignDevices.Select(d => d.Device).ToList(),
 
                 }).Skip(appointmentFilterDto.Page).Take(appointmentFilterDto.PageSize)
                   .ToListAsync();
 
+                foreach (var item in result)
+                {
+                    var accessLevels = await context.IdentifiedAssignDevices.Include(d => d.Device).ThenInclude(a => a.AccessLevel).Where(x => x.IsDeleted == false && x.VisitorId == item.VisitorId && x.Device.AccessLevelId != null).ToListAsync();
+                    if (result != null)
+                    {
+                        //  result.AssignedAccessLevelIdToVisitor = accessLevels.Select(x => x.Device.AccessLevelId.Value).Distinct().ToList();
+                        item.AssignedAccessLevelToVisitor = accessLevels.Select(x => x.Device.AccessLevel).Distinct().ToList();
+                    }
+                }
                 return result;
             }
             catch
@@ -190,7 +201,8 @@ namespace Infrastructure.Repositories
 
             try
             {
-                var query = context.Appointments.AsNoTracking().Include(v => v.Vistor).Include(i => i.IdentifiedAssignedAppointments).Where(x => x.Vistor.VisitorNumber.ToLower().Trim() == visitorNo).AsQueryable();
+                var query = context.Appointments.AsNoTracking().Include(v => v.Vistor).Include(i => i.IdentifiedAssignedAppointments).Include(v => v.Vistor)
+                    .ThenInclude(pr => pr.PersonImages).Where(x => x.Vistor.VisitorNumber.ToLower().Trim() == visitorNo && x.IsDeleted == false).AsQueryable();
 
                 var result = await query.OrderByDescending(x => x.AppointmentDate).Select(x => new VisitorLastAppointmentDetailDto()
                 {
@@ -213,14 +225,15 @@ namespace Infrastructure.Repositories
                     }).ToList(),
                     VisitorNumber = x.Vistor.VisitorNumber,
                     VisitorId = x.VisitorId,
+                    VisitorImageBase64 = x.Vistor.PersonImages.Where(x => x.IsDeleted == false).FirstOrDefault() == null ? "" : x.Vistor.PersonImages.Where(x => x.IsDeleted == false).FirstOrDefault().ImageBase64,
                     //AssignedDevicesIdToVisitor = x.Vistor.IdentifiedAssignDevices.Select(d => d.Device.Oid).ToList(),
                     AssignedDevicesToVisitor = x.Vistor.IdentifiedAssignDevices.Select(d => d.Device).ToList(),
 
                 }).FirstOrDefaultAsync();
-
-                var accessLevels = await context.IdentifiedAssignDevices.Include(d => d.Device).ThenInclude(a => a.AccessLevel).Where(x => x.IsDeleted == false && x.VisitorId == result.VisitorId && x.Device.AccessLevelId != null).ToListAsync();
                 if (result != null)
                 {
+                    var accessLevels = await context.IdentifiedAssignDevices.Include(d => d.Device).ThenInclude(a => a.AccessLevel).Where(x => x.IsDeleted == false && x.VisitorId == result.VisitorId && x.Device.AccessLevelId != null).ToListAsync();
+
                     //  result.AssignedAccessLevelIdToVisitor = accessLevels.Select(x => x.Device.AccessLevelId.Value).Distinct().ToList();
                     result.AssignedAccessLevelToVisitor = accessLevels.Select(x => x.Device.AccessLevel).Distinct().ToList();
                 }

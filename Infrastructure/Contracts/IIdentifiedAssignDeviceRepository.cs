@@ -16,5 +16,6 @@ namespace Infrastructure.Contracts
         /// <returns>Returns a IdentifiedAssignDevice if the PersonId is matched.
         public Task<IEnumerable<IdentifiedAssignDevice>> GetIdentifiedAssignDeviceByPerson(Guid PersonId);
         public Task<IEnumerable<IdentifiedAssignDevice>> GetIdentifiedAssignDeviceByVisitor(Guid VisitorId);
+        public Task<IEnumerable<Person>> GetPersonsByIdentifiedAssignDevice(int DeviceId);
     }
 }

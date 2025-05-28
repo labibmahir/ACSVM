@@ -122,7 +122,7 @@ namespace Infrastructure.Repositories
                         AccessControlId = d.Device.AccessLevelId,
                         AccessControlName = d.Device.AccessLevel.Description
                     }).ToList()
-                    
+
                 }).Skip(personFilterDto.Page).Take(personFilterDto.PageSize)
                   .ToListAsync();
 
@@ -133,6 +133,7 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+
         public async Task<int> GetPersonsCount(PersonFilterDto personFilterDto)
         {
             try
@@ -197,6 +198,104 @@ namespace Infrastructure.Repositories
                 throw;
             }
 
+        }
+        public async Task<IEnumerable<PersonMinifiedDataDto>> GetPersons(PersonNoAndPernameNameFilterDto personNoAndPernameNameFilterDto)
+        {
+            try
+            {
+                var query = context.Persons.AsNoTracking().Include(i => i.PeopleImages).Include(f => f.FingerPrints)
+                    .Include(x => x.IdentifiedAssignCards).Include(x => x.IdentifiedAssignDevices).ThenInclude(x => x.Device).ThenInclude(x => x.AccessLevel)
+                    .Where(i => i.IsDeleted == false).AsQueryable();
+
+
+
+                if (!string.IsNullOrEmpty(personNoAndPernameNameFilterDto.search))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) || x.Surname.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim())
+                    || x.PersonNumber.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) ||
+                    (x.PhoneNumber.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim())) || (x.Email.ToLower().Contains(personNoAndPernameNameFilterDto.search))
+                       );
+
+                if (!string.IsNullOrEmpty(personNoAndPernameNameFilterDto.FullName))
+                {
+                    query = query.Where(x => x.FirstName.ToLower().Contains(personNoAndPernameNameFilterDto.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(personNoAndPernameNameFilterDto.FullName.ToLower().Trim()));
+                }
+
+                if (!string.IsNullOrEmpty(personNoAndPernameNameFilterDto.PersonNumber))
+                {
+                    query = query.Where(x => x.PersonNumber.ToLower().Contains(personNoAndPernameNameFilterDto.PersonNumber.ToLower().Trim()));
+                }
+
+
+                if (personNoAndPernameNameFilterDto.orderBy.ToLower().Trim() == "desc")
+                    query = query.OrderByDescending(d => d.DateCreated);
+                else
+                    query = query.OrderBy(d => d.DateCreated);
+                var result = await query.Select(x => new PersonMinifiedDataDto()
+                {
+                    Oid = x.Oid,
+                    PersonNumber = x.PersonNumber,
+                    FullName = x.FirstName + " " + x.Surname,
+                    Department = x.Department,
+
+                }).Skip(personNoAndPernameNameFilterDto.Page).Take(personNoAndPernameNameFilterDto.PageSize)
+            .ToListAsync();
+
+                return result;
+
+            }
+            catch
+            {
+                throw;
+            }
+
+
+        }
+        public async Task<int> GetPersonsCount(PersonNoAndPernameNameFilterDto personNoAndPernameNameFilterDto)
+        {
+            try
+            {
+                var query = context.Persons.AsNoTracking().Include(i => i.PeopleImages).Include(f => f.FingerPrints)
+                    .Include(x => x.IdentifiedAssignCards).Include(x => x.IdentifiedAssignDevices).ThenInclude(x => x.Device).ThenInclude(x => x.AccessLevel)
+                    .Where(i => i.IsDeleted == false).AsQueryable();
+
+
+                if (!string.IsNullOrEmpty(personNoAndPernameNameFilterDto.search))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) || x.Surname.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim())
+                    || x.PersonNumber.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) ||
+                    (x.PhoneNumber.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim())) || (x.Email.ToLower().Contains(personNoAndPernameNameFilterDto.search))
+                       );
+
+                if (!string.IsNullOrEmpty(personNoAndPernameNameFilterDto.FullName))
+                {
+                    query = query.Where(x => x.FirstName.ToLower().Contains(personNoAndPernameNameFilterDto.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(personNoAndPernameNameFilterDto.FullName.ToLower().Trim()));
+                }
+
+                if (!string.IsNullOrEmpty(personNoAndPernameNameFilterDto.PersonNumber))
+                {
+                    query = query.Where(x => x.PersonNumber.ToLower().Contains(personNoAndPernameNameFilterDto.PersonNumber.ToLower().Trim()));
+                }
+
+
+                if (personNoAndPernameNameFilterDto.orderBy.ToLower().Trim() == "desc")
+                    query = query.OrderByDescending(d => d.DateCreated);
+                else
+                    query = query.OrderBy(d => d.DateCreated);
+                var result = await query.Select(x => new PersonMinifiedDataDto()
+                {
+                    Oid = x.Oid,
+                    PersonNumber = x.PersonNumber,
+                    FullName = x.FirstName + " " + x.Surname,
+                    Department = x.Department,
+
+                }).CountAsync();
+
+                return result;
+
+            }
+            catch
+            {
+                throw;
+            }
         }
         public async Task<Person> GetPersonByPersonNumber(string personNumber)
         {

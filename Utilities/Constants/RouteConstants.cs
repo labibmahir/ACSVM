@@ -58,6 +58,7 @@ namespace Utilities.Constants
         public const string CreatePerson = "person";
 
         public const string ReadPersons = "persons";
+        public const string ReadPersonsMinifiedData = "persons-minified-data";
 
         public const string ReadPersonByKey = "person/key/{key}";
 
@@ -65,6 +66,7 @@ namespace Utilities.Constants
 
         public const string DeletePerson = "person/{key}";
         public const string ImportPersonFromDevice = "person/importpersonfromdevice";
+        public const string ExportPeopleToDevice = "person/export-people-to-device";
         #endregion
 
         #region Visitor
@@ -137,7 +139,7 @@ namespace Utilities.Constants
 
         public const string ReadAppointment = "appointments";
 
-        public const string ReadLastAppointmentByVisitorNo = "last-appointment-by-visitor-number/{VisitorNumber}";
+        public const string ReadLastAppointmentByVisitorNo = "last-appointment-by-visitor-number/{visitorNumber}";
 
         public const string ReadAppointmentByKey = "appointment/key/{key}";
 
