@@ -53,7 +53,7 @@ namespace Domain.Dto
         public TimeSpan EndTime { get; set; }
 
         public Enums.UserVerifyMode? VisitorVerifyMode { get; set; }
-
+        
         public IFormFile Image { get; set; }
         //[Required]
         //public bool IsCompleted { get; set; }

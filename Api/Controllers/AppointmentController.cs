@@ -26,6 +26,12 @@ namespace Api.Controllers
         private readonly ILogger<AppointmentController> logger;
         private readonly IConfiguration _configuration;
         private readonly IHikVisionMachineService _visionMachineService;
+        
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        /// <param name="context">Instance of the UnitOfWork.</param>
+        /// <summary>
         public AppointmentController(IUnitOfWork context, ILogger<AppointmentController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService)
         {
             this.context = context;
@@ -33,18 +39,14 @@ namespace Api.Controllers
             _configuration = configuration;
             _visionMachineService = visionMachineService;
         }
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        /// <param name="context">Instance of the UnitOfWork.</param>
-        /// <summary>
+
         /// URL: api/visitor
         /// </summary>
         /// <param name="Appointment">AppointmentDto object.</param>
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreateAppointment)]
-        public async Task<ActionResult<Person>> CreateAppointment(AppointmentDto appointmentDto)
+        public async Task<ActionResult<Person>> CreateAppointment([FromBody]AppointmentDto appointmentDto, IFormFile? file)
         {
             try
             {
@@ -52,9 +54,7 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var visitorByPhone = await context.VisitorRepository.GetVisitorByphoneNumber(appointmentDto.PhoneNumber);
-
-                //if (visitorByPhone != null && visitorByPhone.OrganizationId == appointmentDto.OrganizationId)
-                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNumberTaken);
+                
                 if (visitorByPhone != null)
                 {
                     var checkActiveAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitor(visitorByPhone.Oid);
@@ -108,8 +108,6 @@ namespace Api.Controllers
                     {
                         // devices = devices.Where(x => x.Oid != device.Oid).ToList();
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
-
-
                     }
 
                 }
