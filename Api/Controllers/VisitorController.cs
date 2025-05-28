@@ -253,7 +253,7 @@ namespace Api.Controllers
                         PageSize = visitorFilterDto.PageSize,
                         TotalItems = await context.VisitorRepository.GetVisitorsCount(visitorFilterDto)
                     };
-
+                    visitorDto.TotalPages = (int)Math.Ceiling((double)visitorDto.TotalItems / visitorDto.PageSize);
                     return Ok(visitorDto);
 
                 }

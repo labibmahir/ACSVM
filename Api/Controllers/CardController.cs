@@ -85,6 +85,16 @@ namespace Api.Controllers
                 if (card == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
+
+                if (card.Status == Enums.Status.NotInService)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardNotInService);
+
+                if (card.Status == Enums.Status.Allocated)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardAlreadyAllocated);
+
+                if (card.Status == Enums.Status.Active)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardCurrenlyActive);
+
                 var person = await context.PersonRepository.GetPersonByKey(cardAssignmentDto.PersonId);
 
                 if (person == null)
@@ -153,6 +163,10 @@ namespace Api.Controllers
 
                 if (card == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                if (card.Status == Enums.Status.NotInService)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardNotInService);
+
 
                 if (card.Status == Enums.Status.Allocated)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardAlreadyAllocated);
@@ -291,6 +305,7 @@ namespace Api.Controllers
                         PageSize = paginationDto.PageSize,
                         TotalItems = await context.CardRepository.GetCardCount(paginationDto)
                     };
+                    cardDto.TotalPages = (int)Math.Ceiling((double)cardDto.TotalItems / cardDto.PageSize);
 
                     return Ok(cardDto);
 
@@ -371,7 +386,8 @@ namespace Api.Controllers
 
                 cardInDb.DateModified = DateTime.Now;
                 cardInDb.ModifiedBy = GetLoggedInUserId();
-                cardInDb.IsDeleted = true;
+                cardInDb.IsDeleted = false;
+                cardInDb.Status = Enums.Status.NotInService;
 
                 context.CardRepository.Update(cardInDb);
                 await context.SaveChangesAsync();

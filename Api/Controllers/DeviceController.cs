@@ -132,7 +132,7 @@ namespace Api.Controllers
                         PageSize = deviceFilterDto.PageSize,
                         TotalItems = await context.DeviceRepository.GetDeviceCount(deviceFilterDto)
                     };
-
+                    devicesDto.TotalPages = (int)Math.Ceiling((double)devicesDto.TotalItems / devicesDto.PageSize);
                     return Ok(devicesDto);
 
                 }
@@ -219,13 +219,14 @@ namespace Api.Controllers
                 if (devicetInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                var checkIfDeviceIsAssigned = await context.IdentifiedAssignDeviceRepository.FirstOrDefaultAsync(x => x.IsDeleted == false && x.DeviceId == key);
+                //var checkIfDeviceIsAssigned = await context.IdentifiedAssignDeviceRepository.FirstOrDefaultAsync(x => x.IsDeleted == false && x.DeviceId == key);
 
-                if (checkIfDeviceIsAssigned == null)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceCannotBeDeleted);
+                //if (checkIfDeviceIsAssigned == null)
+                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceCannotBeDeleted);
 
                 devicetInDb.DateModified = DateTime.Now;
                 devicetInDb.IsDeleted = true;
+                devicetInDb.IsActive = false;
                 devicetInDb.ModifiedBy = GetLoggedInUserId();
 
                 context.DeviceRepository.Update(devicetInDb);

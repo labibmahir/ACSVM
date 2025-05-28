@@ -14,6 +14,9 @@ using System.Net;
 using Microsoft.AspNetCore.Http.HttpResults;
 using System.Security.Cryptography;
 using Domain.Dto.PaginationFiltersDto;
+using System.Drawing.Imaging;
+using System.Drawing;
+using System;
 
 namespace Api.Controllers
 {
@@ -44,6 +47,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreateAppointment)]
+        [Consumes("multipart/form-data")]
         public async Task<ActionResult<Person>> CreateAppointment(AppointmentDto appointmentDto)
         {
             try
@@ -223,7 +227,7 @@ namespace Api.Controllers
                         _ => "other"
                     },
                 };
-   
+
 
 
                 if (visitorToBeAddedInDevices.Count() > 0)
@@ -236,7 +240,7 @@ namespace Api.Controllers
                         {
                             return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
                         }
-                     
+
                     }
                 }
                 if (visitorToBeUpdateInDevices.Count() > 0)
@@ -267,6 +271,7 @@ namespace Api.Controllers
                         DeviceId = item.Oid,
                         OrganizationId = visitor.OrganizationId,
                         VisitorId = visitor.Oid,
+                        IsDeleted = false,
 
                     };
                     identifiedAssignDevices.Add(identifiedAssignDevice);
@@ -349,7 +354,7 @@ namespace Api.Controllers
                             var (IsSuccess, Message) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequest, imageBytes);
 
 
-                            if (IsSuccess == false)
+                            if (IsSuccess)
                             {
                                 var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitor.Oid);
                                 if (personImageInserted == null)
@@ -391,6 +396,7 @@ namespace Api.Controllers
                     }
                 }
                 #endregion
+
                 return Ok(appointment);
             }
             catch (Exception ex)
@@ -430,6 +436,7 @@ namespace Api.Controllers
                         TotalItems = await context.AppointmentRepository.GetAppointmentsCount(appointmentFilterDto)
                     };
 
+                    appointmentDto.TotalPages = (int)Math.Ceiling((double)appointmentDto.TotalItems / appointmentDto.PageSize);
 
 
                     return Ok(appointmentDto);
@@ -456,6 +463,29 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
 
                 var appointments = await context.AppointmentRepository.GetLastAppointmentByVisitorNo(visitorNumber);
+
+                return Ok(appointments);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
+        /// URL:api/appointments/last-appointment-by-visitor-number/{VisitorNumber}
+        /// </summary>
+        /// <returns>A list of appointments.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadLastAppointmentByPhoneNo)]
+        public async Task<IActionResult> ReadLastAppointmentByPhoneNo(string phoneNumber)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(phoneNumber))
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
+
+                var appointments = await context.AppointmentRepository.GetLastAppointmentByPhoneNo(phoneNumber);
 
                 return Ok(appointments);
             }
@@ -500,7 +530,7 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateAppointment)]
-
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> UpdateAppointment(Guid key, AppointmentDto appointmentDto)
         {
             try
@@ -528,11 +558,19 @@ namespace Api.Controllers
 
                 foreach (var personid in appointmentDto.PersonIds)
                 {
-                    var checkPersonId = await context.PersonImageRepository.FirstOrDefaultAsync(x => x.Oid == personid);
+                    var checkPersonId = await context.PersonRepository.FirstOrDefaultAsync(x => x.Oid == personid);
                     if (checkPersonId == null)
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNotFound);
                 }
+                if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
+                {
+                    var allowedImageTypes = new[] { "image/jpeg", "image/png" };
 
+                    if (!allowedImageTypes.Contains(appointmentDto.Image.ContentType.ToLower()))
+                    {
+                        return BadRequest("Only image files (JPEG, PNG) are allowed.");
+                    }
+                }
                 var devices = new List<Device>();
                 if (appointmentDto.AccessLevelList.Length > 0)
                 {
@@ -611,7 +649,6 @@ namespace Api.Controllers
                 visitorInDb.FirstName = appointmentDto.FirstName;
                 visitorInDb.Gender = appointmentDto.Gender;
                 visitorInDb.OrganizationId = appointmentDto.OrganizationId;
-                visitorInDb.VisitorNumber = GenerateVisitorNo();
                 visitorInDb.PhoneNumber = appointmentDto.PhoneNumber;
                 visitorInDb.Surname = appointmentDto.Surname;
                 visitorInDb.UserVerifyMode = appointmentDto.VisitorVerifyMode;
@@ -641,7 +678,7 @@ namespace Api.Controllers
                         DeviceId = item.Oid,
                         OrganizationId = visitorInDb.OrganizationId,
                         VisitorId = visitorInDb.Oid,
-
+                        IsDeleted = false,
                     };
                     identifiedAssignDevices.Add(identifiedAssignDevice);
                 }
@@ -717,6 +754,147 @@ namespace Api.Controllers
                 }
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                 await context.SaveChangesAsync();
+
+
+                #region addingImage To Device and Db
+                if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
+                {
+                    byte[] imageBytes;
+
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await appointmentDto.Image.CopyToAsync(memoryStream);
+                        imageBytes = memoryStream.ToArray();
+                    }
+
+                    string base64Image = Convert.ToBase64String(imageBytes);
+
+                    var personImage = await context.PersonImageRepository.GetImageByVisitorId(visitorInDb.Oid);
+
+                    if (personImage == null)
+                    {
+                        personImage = new PersonImage()
+                        {
+                            CreatedBy = GetLoggedInUserId(),
+                            DateCreated = DateTime.Now,
+                            ImageBase64 = base64Image,
+                            ImageData = imageBytes,
+                            VisitorId = visitorInDb.Oid,
+                            Oid = Guid.NewGuid(),
+                            IsDeleted = false,
+                        };
+                    }
+
+
+
+
+                    FacePictureUploadDto vMPersonImageSetUpRequest = new FacePictureUploadDto()
+                    {
+                        faceLibType = "blackFD",
+                        FDID = "1",
+                        FPID = visitorInDb.VisitorNumber
+                    };
+
+                    if (visitorToBeAddedInDevices.Count() > 0)
+                    {
+                        foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
+                        {
+                            var (IsSuccess, Message) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequest, imageBytes);
+
+
+                            if (IsSuccess)
+                            {
+                                var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitorInDb.Oid);
+                                if (personImageInserted == null)
+                                {
+                                    context.PersonImageRepository.Add(personImage);
+                                    await context.SaveChangesAsync();
+                                }
+                                else
+                                {
+                                    personImageInserted.ModifiedBy = GetLoggedInUserId();
+                                    personImageInserted.DateModified = DateTime.Now;
+                                    personImageInserted.ImageBase64 = base64Image;
+                                    personImageInserted.ImageData = imageBytes;
+                                    personImageInserted.IsDeleted = false;
+
+                                    context.PersonImageRepository.Update(personImage);
+                                    await context.SaveChangesAsync();
+                                }
+                            }
+
+                        }
+                    }
+                    if (visitorToBeUpdateInDevices.Count() > 0)
+                    {
+                        foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
+                        {
+                            var (IsSuccess, Message) = await _visionMachineService.DeleteFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, new FacePictureRemoveDto
+                            {
+                                faceLibType = "blackFD",
+                                FDID = "1",
+                                FPID = visitorInDb.VisitorNumber,
+                                deleteFP = true
+                            }, imageBytes);
+
+                            if (IsSuccess)
+                            {
+                                FacePictureUploadDto vMPersonImageSetUpRequestUpdate = new FacePictureUploadDto()
+                                {
+                                    faceLibType = "blackFD",
+                                    FDID = "1",
+                                    FPID = visitorInDb.VisitorNumber
+                                };
+
+                                var (IsSuccessUpload, MessageUpload) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequestUpdate, imageBytes);
+                                if (IsSuccessUpload)
+                                {
+                                    var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitorInDb.Oid);
+                                    if (personImageInserted == null)
+                                    {
+                                        context.PersonImageRepository.Add(personImage);
+                                        await context.SaveChangesAsync();
+                                    }
+                                    else
+                                    {
+                                        personImageInserted.ModifiedBy = GetLoggedInUserId();
+                                        personImageInserted.DateModified = DateTime.Now;
+                                        personImageInserted.ImageBase64 = base64Image;
+                                        personImageInserted.ImageData = imageBytes;
+                                        personImageInserted.IsDeleted = false;
+
+                                        context.PersonImageRepository.Update(personImage);
+                                        await context.SaveChangesAsync();
+                                    }
+                                }
+                            }
+
+
+                        }
+                    }
+                }
+                #endregion
+
+                //var (IsSuccess, Message) = await _visionMachineService.DeleteFaceRecordToLibrary(device.Device.DeviceIP, Convert.ToInt16(device.Device.Port), device.Device.Username, device.Device.Password, new FacePictureRemoveDto
+                //{
+                //    faceLibType = "blackFD",
+                //    FDID = "1",
+                //    FPID = person.PersonNumber,
+                //    deleteFP = true
+                //}, imageBytes);
+
+                //if (IsSuccess)
+                //{
+                //    FacePictureUploadDto vMPersonImageSetUpRequest = new FacePictureUploadDto()
+                //    {
+                //        faceLibType = "blackFD",
+                //        FDID = "1",
+                //        FPID = person.PersonNumber
+                //    };
+
+                //    var (IsSuccessUpload, MessageUpload) = await _visionMachineService.PostFaceRecordToLibrary(device.Device.DeviceIP, Convert.ToInt16(device.Device.Port), device.Device.Username, device.Device.Password, vMPersonImageSetUpRequest, imageBytes);
+
+                //}
                 return StatusCode(StatusCodes.Status204NoContent);
             }
             catch (Exception ex)

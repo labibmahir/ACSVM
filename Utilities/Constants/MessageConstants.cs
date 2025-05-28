@@ -20,6 +20,7 @@ namespace Utilities.Constants
         public const string DuplicateFingerError = "The FingerPrint is already added for this finger!";
         //USER PROFILE REGISTRATION:
         public const string NoMatchFoundError = "No match found!";
+        public const string CardNotInService = "Card not in Service!";
         public const string NoImageFileProvided = "No match found!";
         public const string UsernameTaken = "Username already exists!";
         public const string DeviceNameTaken = "Device Name already exists!";
@@ -38,5 +39,7 @@ namespace Utilities.Constants
         public const string SelectedDeviceNotActive = "Select Device is currently offline.";
         public const string InvalidLogin = "Invalid username or password!";
         public const string AlreadyHaveAppointment = "Already have appointment. Please cancel previous appointment to proceed";
+        public const string UserNameNotExist = "UserName not exixts.";
+        public const string InvalidRefreshToken = "Invalid Refresh Token.";
     }
 }

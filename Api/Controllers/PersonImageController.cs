@@ -202,7 +202,7 @@ namespace Api.Controllers
 
                     var (IsSuccess, Message) = await _visionMachineService.PostFaceRecordToLibrary(device.Device.DeviceIP, Convert.ToInt16(device.Device.Port), device.Device.Username, device.Device.Password, vMPersonImageSetUpRequest, imageBytes);
 
-                    if (IsSuccess == false)
+                    if (IsSuccess)
                     {
                         var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitor.Oid);
                         if (personImageInserted == null)
