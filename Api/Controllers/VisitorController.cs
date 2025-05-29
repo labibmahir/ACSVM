@@ -225,6 +225,34 @@ namespace Api.Controllers
         }
 
         /// <summary>
+        /// URL: api/visitor/phone-number/{phoneNo}
+        /// </summary>
+        /// <param name="key">Primary key of the table visitor.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadVisitorByPhone)]
+       
+        public async Task<IActionResult> ReadVisitorByPhone(string phoneNo)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(phoneNo))
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
+
+                var visitor = await context.VisitorRepository.GetVisitorByphoneNumber(phoneNo);
+
+                if (visitor == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                return Ok(visitor);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
         /// URL:api/visitors
         /// </summary>
         /// <returns>A list of visitors.</returns>

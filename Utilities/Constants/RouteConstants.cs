@@ -80,6 +80,8 @@ namespace Utilities.Constants
 
         public const string ReadVisitorByKey = "visitor/key/{key}";
 
+        public const string ReadVisitorByPhone = "visitor/phone-number/{phoneNo}";
+
         public const string UpdateVisitor = "visitor/{key}";
 
         public const string DeleteVisitor = "visitor/{key}";
