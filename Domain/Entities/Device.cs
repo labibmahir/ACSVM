@@ -45,6 +45,7 @@ public class Device : BaseModel
     public string DeviceLicence { get; set; }
 
     public bool IsActive { get; set; }
+    public bool CurrentActiveStatus { get; set; }
 
     public int? AccessLevelId { get; set; }
 

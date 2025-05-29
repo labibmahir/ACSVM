@@ -277,9 +277,13 @@ namespace Api.Controllers
             {
                 if (personFilterDto.PageSize == 0)
                 {
-                    var persons = await context.PersonRepository.GetPersons();
-
-                    return Ok(persons);
+                    var persons = await context.PersonRepository.GetPersons(personFilterDto);
+                    PagedResultDto<PersonMinifiedDataDto> personDto = new PagedResultDto<PersonMinifiedDataDto>()
+                    {
+                        Data = persons.ToList(),
+                        TotalItems = await context.PersonRepository.GetPersonsCount(personFilterDto),
+                    };
+                    return Ok(personDto);
                 }
                 else
                 {
@@ -292,8 +296,10 @@ namespace Api.Controllers
                         Data = persons.ToList(),
                         PageNumber = currentPage,
                         PageSize = personFilterDto.PageSize,
-                        TotalItems = await context.PersonRepository.GetPersonsCount(personFilterDto)
+                        TotalItems = await context.PersonRepository.GetPersonsCount(personFilterDto),
+
                     };
+                    personDto.TotalPages = (int)Math.Ceiling((double)personDto.TotalItems / personDto.PageSize);
 
                     return Ok(personDto);
 

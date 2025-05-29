@@ -52,6 +52,8 @@ namespace Api.Controllers
                 if (deviceWithSameIP != null && deviceWithSameIP.OrganizationId == device.OrganizationId)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateIPError);
 
+                device.CurrentActiveStatus = await IsDeviceActive(device.DeviceIP);
+
                 device.DateCreated = DateTime.Now;
                 device.IsDeleted = false;
                 device.CreatedBy = GetLoggedInUserId();

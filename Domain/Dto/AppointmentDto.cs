@@ -54,7 +54,8 @@ namespace Domain.Dto
 
         public Enums.UserVerifyMode? VisitorVerifyMode { get; set; }
 
-        public IFormFile Image { get; set; }
+        public string? CardNumber { get; set; }
+        //   public IFormFile Image { get; set; }
         //[Required]
         //public bool IsCompleted { get; set; }
 

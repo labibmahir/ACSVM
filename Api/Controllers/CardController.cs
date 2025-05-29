@@ -148,6 +148,73 @@ namespace Api.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
             }
         }
+
+
+        /// <summary>
+        /// URL: api/card-un-assign-person
+        /// </summary>
+        /// <param name="card">Card object.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpPost]
+        [Route(RouteConstants.UnAssignCardToPerson)]
+        public async Task<ActionResult<Card>> UnAssignCardToPerson(CardAssignmentDto cardAssignmentDto)
+        {
+            try
+            {
+                var card = await context.CardRepository.GetCardByKey(cardAssignmentDto.CardId);
+
+                if (card == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+
+                var person = await context.PersonRepository.GetPersonByKey(cardAssignmentDto.PersonId);
+
+                if (person == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                var identifiedAssignCardInDb = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByPerson(cardAssignmentDto.PersonId);
+                if (identifiedAssignCardInDb != null)
+                {
+                    identifiedAssignCardInDb.IsDeleted = true;
+                    identifiedAssignCardInDb.DateModified = DateTime.Now;
+                    identifiedAssignCardInDb.ModifiedBy = GetLoggedInUserId();
+                    context.IdentifiedAssignCardRepository.Update(identifiedAssignCardInDb);
+                }
+
+
+                var assignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByPerson(person.Oid);
+
+                foreach (var item in assignedDevices)
+                {
+                    if (!await IsDeviceActive(item.Device.DeviceIP))
+                    {
+                        //        return StatusCode(StatusCodes.Status404NotFound, $"Person assigned with Device IP {item.Device.DeviceIP} is not active at the moment.");
+                    }
+                }
+                VMCardInfoDeleteRequest vMCardInfoDeleteRequest = new VMCardInfoDeleteRequest()
+                {
+                    CardNoList = new List<VMCardNoListItem?>() { new VMCardNoListItem() { cardNo = card.CardNumber } }
+                };
+                foreach (var item in assignedDevices)
+                {
+                    var result = await _visionMachineService.DeleteCard(item.Device, vMCardInfoDeleteRequest);
+
+                    if (!result.Success)
+                    {
+
+                    }
+                }
+                card.Status = Enums.Status.Inactive;
+                context.CardRepository.Update(card);
+                await context.SaveChangesAsync();
+
+                return Ok(card);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
         /// <summary>
         /// URL: api/card-assign-visitor
         /// </summary>
@@ -216,6 +283,77 @@ namespace Api.Controllers
                 //    }
                 //}
                 context.IdentifiedAssignCardRepository.Add(identifiedAssignCard);
+
+                await context.SaveChangesAsync();
+
+                return Ok(card);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
+        /// URL: api/card-un-assign-visitor
+        /// </summary>
+        /// <param name="card">Card object.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpPost]
+        [Route(RouteConstants.UnAssignCardToVisitor)]
+        public async Task<ActionResult<Card>> UnAssignCardToVisitor(CardAssignmentToVisitorDto cardAssignmentToVisitorDto)
+        {
+            try
+            {
+                var card = await context.CardRepository.GetCardByKey(cardAssignmentToVisitorDto.CardId);
+
+                if (card == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                var visitor = await context.VisitorRepository.GetVisitorByKey(cardAssignmentToVisitorDto.VisitorId);
+
+                if (visitor == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                var identifiedAssignCardInDb = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByVisitor(cardAssignmentToVisitorDto.VisitorId);
+                if (identifiedAssignCardInDb != null)
+                {
+                    identifiedAssignCardInDb.IsDeleted = true;
+                    identifiedAssignCardInDb.DateModified = DateTime.Now;
+                    identifiedAssignCardInDb.ModifiedBy = GetLoggedInUserId();
+                    context.IdentifiedAssignCardRepository.Update(identifiedAssignCardInDb);
+                }
+
+
+                var assignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(visitor.Oid);
+
+                foreach (var item in assignedDevices)
+                {
+                    if (!await IsDeviceActive(item.Device.DeviceIP))
+                    {
+                        // return StatusCode(StatusCodes.Status404NotFound, $"Person assigned with Device IP {item.Device.DeviceIP} is not active at the moment.");
+                    }
+                }
+
+                VMCardInfoDeleteRequest vMCardInfoDeleteRequest = new VMCardInfoDeleteRequest()
+                {
+                    CardNoList = new List<VMCardNoListItem?>() { new VMCardNoListItem() { cardNo = card.CardNumber } }
+                };
+
+                foreach (var item in assignedDevices)
+                {
+                    var result = await _visionMachineService.DeleteCard(item.Device, vMCardInfoDeleteRequest);
+
+                    if (!result.Success)
+                    {
+
+                    }
+                }
+
+                card.Status = Enums.Status.Inactive;
+                card.ModifiedBy = GetLoggedInUserId();
+                card.DateModified = DateTime.Now;
+                context.CardRepository.Update(card);
 
                 await context.SaveChangesAsync();
 
@@ -381,7 +519,7 @@ namespace Api.Controllers
 
                 var checkIfCardIsAssigned = await context.IdentifiedAssignCardRepository.FirstOrDefaultAsync(x => x.IsDeleted == false && x.CardId == key);
 
-                if (checkIfCardIsAssigned == null)
+                if (checkIfCardIsAssigned != null && (cardInDb.Status == Enums.Status.Allocated || cardInDb.Status == Enums.Status.Active))
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardCannotBeDeleted);
 
                 cardInDb.DateModified = DateTime.Now;

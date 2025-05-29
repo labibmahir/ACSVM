@@ -237,7 +237,7 @@ namespace Infrastructure.Repositories
                     FullName = x.FirstName + " " + x.Surname,
                     Department = x.Department,
 
-                }).Skip(personNoAndPernameNameFilterDto.Page).Take(personNoAndPernameNameFilterDto.PageSize)
+                })
             .ToListAsync();
 
                 return result;

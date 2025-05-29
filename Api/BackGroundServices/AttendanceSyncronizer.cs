@@ -44,8 +44,14 @@ namespace Api.BackGroundServices
                     {
                         if (!await IsDeviceActive(device.DeviceIP))
                         {
+                            device.CurrentActiveStatus = false;
+                            context.DeviceRepository.Update(device);
+                            await context.SaveChangesAsync();
                             continue;
                         }
+                        device.CurrentActiveStatus = true;
+                        context.DeviceRepository.Update(device);
+                        await context.SaveChangesAsync();
                         #region ACSEvent
 
                         // Processing ACS Event Data
