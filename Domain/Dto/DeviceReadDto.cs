@@ -50,6 +50,8 @@ namespace Domain.Dto
 
         public bool IsActive { get; set; }
 
+        public bool CurrentActiveStatus { get; set; }
+
         public int? AccessLevelId { get; set; }
         public string? AccessLevelName { get; set; }
     }

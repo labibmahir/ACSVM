@@ -180,6 +180,7 @@ namespace Infrastructure.Repositories
                         Port = d.Port,
                         SerialNumber = d.SerialNumber,
                         Username = d.Username,
+                        CurrentActiveStatus=d.CurrentActiveStatus
 
                     })
                     .Skip(deviceFilterDto.Page).Take(deviceFilterDto.PageSize)
