@@ -14,6 +14,9 @@ using System.Net;
 using Microsoft.AspNetCore.Http.HttpResults;
 using System.Security.Cryptography;
 using Domain.Dto.PaginationFiltersDto;
+using System.Drawing.Imaging;
+using System.Drawing;
+using System;
 
 namespace Api.Controllers
 {
@@ -26,12 +29,6 @@ namespace Api.Controllers
         private readonly ILogger<AppointmentController> logger;
         private readonly IConfiguration _configuration;
         private readonly IHikVisionMachineService _visionMachineService;
-        
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        /// <param name="context">Instance of the UnitOfWork.</param>
-        /// <summary>
         public AppointmentController(IUnitOfWork context, ILogger<AppointmentController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService)
         {
             this.context = context;
@@ -39,14 +36,18 @@ namespace Api.Controllers
             _configuration = configuration;
             _visionMachineService = visionMachineService;
         }
-
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        /// <param name="context">Instance of the UnitOfWork.</param>
+        /// <summary>
         /// URL: api/visitor
         /// </summary>
         /// <param name="Appointment">AppointmentDto object.</param>
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreateAppointment)]
-        public async Task<ActionResult<Person>> CreateAppointment([FromBody]AppointmentDto appointmentDto, IFormFile? file)
+        public async Task<ActionResult<Person>> CreateAppointment(AppointmentDto appointmentDto)
         {
             try
             {
@@ -69,17 +70,6 @@ namespace Api.Controllers
                     if (checkPersonId == null)
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNotFound);
                 }
-                if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
-                {
-                    var allowedImageTypes = new[] { "image/jpeg", "image/png" };
-
-                    if (!allowedImageTypes.Contains(appointmentDto.Image.ContentType.ToLower()))
-                    {
-                        return BadRequest("Only image files (JPEG, PNG) are allowed.");
-                    }
-                }
-
-
                 var devices = new List<Device>();
                 if (appointmentDto.AccessLevelList.Length > 0)
                 {
@@ -106,7 +96,6 @@ namespace Api.Controllers
                 {
                     if (!await IsDeviceActive(device.DeviceIP))
                     {
-                        // devices = devices.Where(x => x.Oid != device.Oid).ToList();
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
                     }
 
@@ -174,6 +163,26 @@ namespace Api.Controllers
                     foreach (var item in identifiedAssignedDeviceByVisitor)
                         context.IdentifiedAssignDeviceRepository.Delete(new IdentifiedAssignDevice() { Oid = item.Oid });
                 }
+                
+                IdentifiedAssignCard assignCard = new IdentifiedAssignCard();
+                assignCard.Oid = Guid.NewGuid();
+                assignCard.CardId = appointmentDto.CardId;
+                assignCard.VisitorId = visitor.Oid;
+                assignCard.IsDeleted = false;
+                assignCard.DateCreated = DateTime.Now;
+                assignCard.IsPermanent = false;
+                
+                context.IdentifiedAssignCardRepository.Add(assignCard);
+                
+                var card = await context.CardRepository.GetCardByKey(appointmentDto.CardId);
+                card.Status = Status.Active;
+                
+                context.CardRepository.Update(card);
+                
+                VMCardInfo cardInfo = new VMCardInfo();
+                cardInfo.addCard = true;
+                cardInfo.employeeNo = visitor.VisitorNumber;
+                cardInfo.cardNo = card.CardNumber;
 
                 List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
 
@@ -221,7 +230,7 @@ namespace Api.Controllers
                         _ => "other"
                     },
                 };
-   
+
 
 
                 if (visitorToBeAddedInDevices.Count() > 0)
@@ -234,7 +243,6 @@ namespace Api.Controllers
                         {
                             return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
                         }
-                     
                     }
                 }
                 if (visitorToBeUpdateInDevices.Count() > 0)
@@ -247,12 +255,8 @@ namespace Api.Controllers
                         {
                             return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
                         }
-
-
                     }
                 }
-
-
                 // context.VisitorRepository.Add(visitor);
                 await context.SaveChangesAsync();
                 List<IdentifiedAssignDevice> identifiedAssignDevices = new List<IdentifiedAssignDevice>();
@@ -265,6 +269,7 @@ namespace Api.Controllers
                         DeviceId = item.Oid,
                         OrganizationId = visitor.OrganizationId,
                         VisitorId = visitor.Oid,
+                        IsDeleted = false,
 
                     };
                     identifiedAssignDevices.Add(identifiedAssignDevice);
@@ -308,87 +313,9 @@ namespace Api.Controllers
                     identifiedAssignedAppointments.Add(identifiedAssignedAppointment);
                 }
                 context.IdentifiedAssignedAppointmentRepository.AddRange(identifiedAssignedAppointments);
+                
                 await context.SaveChangesAsync();
-                #region addingImage To Device and Db
-                if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
-                {
-                    byte[] imageBytes;
 
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        await appointmentDto.Image.CopyToAsync(memoryStream);
-                        imageBytes = memoryStream.ToArray();
-                    }
-
-                    string base64Image = Convert.ToBase64String(imageBytes);
-
-                    PersonImage personImage = new PersonImage()
-                    {
-                        CreatedBy = GetLoggedInUserId(),
-                        DateCreated = DateTime.Now,
-                        ImageBase64 = base64Image,
-                        ImageData = imageBytes,
-                        VisitorId = visitor.Oid,
-                        Oid = Guid.NewGuid(),
-                        IsDeleted = false,
-                    };
-
-                    FacePictureUploadDto vMPersonImageSetUpRequest = new FacePictureUploadDto()
-                    {
-                        faceLibType = "blackFD",
-                        FDID = "1",
-                        FPID = visitor.VisitorNumber
-                    };
-
-                    if (visitorToBeAddedInDevices.Count() > 0)
-                    {
-                        foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
-                        {
-                            var (IsSuccess, Message) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequest, imageBytes);
-
-
-                            if (IsSuccess == false)
-                            {
-                                var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitor.Oid);
-                                if (personImageInserted == null)
-                                {
-                                    context.PersonImageRepository.Add(personImage);
-                                    await context.SaveChangesAsync();
-                                }
-                            }
-
-                        }
-                    }
-                    if (visitorToBeUpdateInDevices.Count() > 0)
-                    {
-                        foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
-                        {
-                            var (IsSuccess, Message) = await _visionMachineService.DeleteFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, new FacePictureRemoveDto
-                            {
-                                faceLibType = "blackFD",
-                                FDID = "1",
-                                FPID = visitor.VisitorNumber,
-                                deleteFP = true
-                            }, imageBytes);
-
-                            if (IsSuccess)
-                            {
-                                FacePictureUploadDto vMPersonImageSetUpRequestUpdate = new FacePictureUploadDto()
-                                {
-                                    faceLibType = "blackFD",
-                                    FDID = "1",
-                                    FPID = visitor.VisitorNumber
-                                };
-
-                                var (IsSuccessUpload, MessageUpload) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequestUpdate, imageBytes);
-
-                            }
-
-
-                        }
-                    }
-                }
-                #endregion
                 return Ok(appointment);
             }
             catch (Exception ex)
@@ -428,6 +355,7 @@ namespace Api.Controllers
                         TotalItems = await context.AppointmentRepository.GetAppointmentsCount(appointmentFilterDto)
                     };
 
+                    appointmentDto.TotalPages = (int)Math.Ceiling((double)appointmentDto.TotalItems / appointmentDto.PageSize);
 
 
                     return Ok(appointmentDto);
@@ -454,6 +382,29 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
 
                 var appointments = await context.AppointmentRepository.GetLastAppointmentByVisitorNo(visitorNumber);
+
+                return Ok(appointments);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
+        /// URL:api/appointments/last-appointment-by-visitor-number/{VisitorNumber}
+        /// </summary>
+        /// <returns>A list of appointments.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadLastAppointmentByPhoneNo)]
+        public async Task<IActionResult> ReadLastAppointmentByPhoneNo(string phoneNumber)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(phoneNumber))
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
+
+                var appointments = await context.AppointmentRepository.GetLastAppointmentByPhoneNo(phoneNumber);
 
                 return Ok(appointments);
             }
@@ -498,7 +449,6 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateAppointment)]
-
         public async Task<IActionResult> UpdateAppointment(Guid key, AppointmentDto appointmentDto)
         {
             try
@@ -526,11 +476,11 @@ namespace Api.Controllers
 
                 foreach (var personid in appointmentDto.PersonIds)
                 {
-                    var checkPersonId = await context.PersonImageRepository.FirstOrDefaultAsync(x => x.Oid == personid);
+                    var checkPersonId = await context.PersonRepository.FirstOrDefaultAsync(x => x.Oid == personid);
                     if (checkPersonId == null)
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNotFound);
                 }
-
+             
                 var devices = new List<Device>();
                 if (appointmentDto.AccessLevelList.Length > 0)
                 {
@@ -609,7 +559,6 @@ namespace Api.Controllers
                 visitorInDb.FirstName = appointmentDto.FirstName;
                 visitorInDb.Gender = appointmentDto.Gender;
                 visitorInDb.OrganizationId = appointmentDto.OrganizationId;
-                visitorInDb.VisitorNumber = GenerateVisitorNo();
                 visitorInDb.PhoneNumber = appointmentDto.PhoneNumber;
                 visitorInDb.Surname = appointmentDto.Surname;
                 visitorInDb.UserVerifyMode = appointmentDto.VisitorVerifyMode;
@@ -639,7 +588,7 @@ namespace Api.Controllers
                         DeviceId = item.Oid,
                         OrganizationId = visitorInDb.OrganizationId,
                         VisitorId = visitorInDb.Oid,
-
+                        IsDeleted = false,
                     };
                     identifiedAssignDevices.Add(identifiedAssignDevice);
                 }
@@ -688,6 +637,27 @@ namespace Api.Controllers
                         _ => "other"
                     }
                 };
+                
+                IdentifiedAssignCard assignCard = new IdentifiedAssignCard();
+                assignCard.Oid = Guid.NewGuid();
+                assignCard.CardId = appointmentDto.CardId;
+                assignCard.VisitorId = visitorInDb.Oid;
+                assignCard.IsDeleted = false;
+                assignCard.DateCreated = DateTime.Now;
+                assignCard.IsPermanent = false;
+                
+                context.IdentifiedAssignCardRepository.Add(assignCard);
+                
+                var card = await context.CardRepository.GetCardByKey(appointmentDto.CardId);
+                card.Status = Status.Active;
+                
+                context.CardRepository.Update(card);
+                
+                VMCardInfo cardInfo = new VMCardInfo();
+                cardInfo.addCard = true;
+                cardInfo.employeeNo = visitorInDb.VisitorNumber;
+                cardInfo.cardNo = card.CardNumber;
+                
                 if (visitorToBeAddedInDevices.Count() > 0)
                 {
                     foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
@@ -715,6 +685,7 @@ namespace Api.Controllers
                 }
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                 await context.SaveChangesAsync();
+                
                 return StatusCode(StatusCodes.Status204NoContent);
             }
             catch (Exception ex)

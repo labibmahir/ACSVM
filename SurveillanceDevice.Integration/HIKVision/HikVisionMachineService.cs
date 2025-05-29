@@ -128,7 +128,7 @@ namespace SurveillanceDevice.Integration.HIKVision
                 var response = await _client.PutAsync("/ISAPI/AccessControl/UserInfo/Modify?format=json",
                    new StringContent(jsonData, Encoding.UTF8, "application/json"));
 
-                response.EnsureSuccessStatusCode();
+            //    response.EnsureSuccessStatusCode();
 
                 var responseText = await response.Content.ReadAsStringAsync();
                 return responseText;

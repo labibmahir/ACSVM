@@ -28,5 +28,6 @@ namespace Infrastructure.Contracts
         public Task<IEnumerable<AppointmentReadDto>> GetAppointments(AppointmentFilterDto appointmentFilterDto);
         public Task<int> GetAppointmentsCount(AppointmentFilterDto appointmentFilterDto);
         public Task<VisitorLastAppointmentDetailDto> GetLastAppointmentByVisitorNo(string visitorNo);
+        public Task<VisitorLastAppointmentDetailDto> GetLastAppointmentByPhoneNo(string phoneNo);
     }
 }

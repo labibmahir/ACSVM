@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using SurveillanceDevice.Integration.HIKVision;
 using Utilities.Constants;
 using System.Net.NetworkInformation;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Api.Controllers
 {
@@ -202,7 +203,7 @@ namespace Api.Controllers
 
                     var (IsSuccess, Message) = await _visionMachineService.PostFaceRecordToLibrary(device.Device.DeviceIP, Convert.ToInt16(device.Device.Port), device.Device.Username, device.Device.Password, vMPersonImageSetUpRequest, imageBytes);
 
-                    if (IsSuccess == false)
+                    if (IsSuccess)
                     {
                         var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitor.Oid);
                         if (personImageInserted == null)
@@ -279,6 +280,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadPersonImageByVisitorId)]
+        [AllowAnonymous]
         public async Task<IActionResult> ReadPersonImageByVisitorId(Guid VisitorId)
         {
             try
@@ -288,7 +290,9 @@ namespace Api.Controllers
 
                 var visitorImage = await context.PersonImageRepository.GetImageByVisitorId(VisitorId);
 
-
+                if (visitorImage == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+                
                 return Ok(visitorImage);
             }
             catch (Exception ex)

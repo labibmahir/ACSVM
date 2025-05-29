@@ -253,7 +253,7 @@ namespace Api.Controllers
                         PageSize = personFilterDto.PageSize,
                         TotalItems = await context.PersonRepository.GetPersonsCount(personFilterDto)
                     };
-
+                    personDto.TotalPages = (int)Math.Ceiling((double)personDto.TotalItems / personDto.PageSize);
                     return Ok(personDto);
 
                 }

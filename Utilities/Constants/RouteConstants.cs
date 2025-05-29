@@ -24,6 +24,8 @@ namespace Utilities.Constants
 
         public const string UserLogin = "user-account/login";
 
+        public const string RefreshToken = "user-account/refresh-token";
+
 
         public const string ChangedPassword = "user-account/change-password";
 
@@ -37,6 +39,8 @@ namespace Utilities.Constants
         public const string ReadDeviceByKey = "device/key/{key}";
 
         public const string UpdateDevice = "device/{key}";
+        public const string ActivateDevice = "device/activate/{key}";
+        public const string DeActivateDevice = "device/deactivate/{key}";
 
         public const string DeleteDevice = "device/{key}";
         #endregion
@@ -75,6 +79,8 @@ namespace Utilities.Constants
         public const string ReadVisitors = "visitors";
 
         public const string ReadVisitorByKey = "visitor/key/{key}";
+
+        public const string ReadVisitorByPhone = "visitor/phone-number/{phoneNo}";
 
         public const string UpdateVisitor = "visitor/{key}";
 
@@ -140,6 +146,7 @@ namespace Utilities.Constants
         public const string ReadAppointment = "appointments";
 
         public const string ReadLastAppointmentByVisitorNo = "last-appointment-by-visitor-number/{visitorNumber}";
+        public const string ReadLastAppointmentByPhoneNo = "last-appointment-by-phone-number/{phoneNumber}";
 
         public const string ReadAppointmentByKey = "appointment/key/{key}";
 

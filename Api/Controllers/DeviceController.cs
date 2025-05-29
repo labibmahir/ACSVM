@@ -132,7 +132,7 @@ namespace Api.Controllers
                         PageSize = deviceFilterDto.PageSize,
                         TotalItems = await context.DeviceRepository.GetDeviceCount(deviceFilterDto)
                     };
-
+                    devicesDto.TotalPages = (int)Math.Ceiling((double)devicesDto.TotalItems / devicesDto.PageSize);
                     return Ok(devicesDto);
 
                 }
@@ -151,7 +151,7 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateDevice)]
-        [AllowAnonymous]
+        //[AllowAnonymous]
         public async Task<IActionResult> UpdateDevice(int key, Device device)
         {
             try
@@ -201,6 +201,80 @@ namespace Api.Controllers
         }
 
         /// <summary>
+        /// URL: api/device/{key}
+        /// </summary>
+        /// <param name="key">Primary key of the table Device.</param>
+        /// <param name="device">Device to be updated.</param>
+        /// <returns>Http status code: NoContent.</returns>
+        [HttpPut]
+        [Route(RouteConstants.ActivateDevice)]
+        //[AllowAnonymous]
+        public async Task<IActionResult> ActivateDevice(int key, ActivateDeviceDto activateDeviceDto)
+        {
+            try
+            {
+                if (key != activateDeviceDto.DeviceId)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
+
+                var deviceInDb = await context.DeviceRepository.GetDeviceByKey(activateDeviceDto.DeviceId);
+
+                if (deviceInDb == null)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.NoMatchFoundError);
+
+                deviceInDb.IsActive = true;
+                deviceInDb.IsDeleted = false;
+                deviceInDb.DateModified = DateTime.Now;
+                deviceInDb.ModifiedBy = GetLoggedInUserId();
+
+                context.DeviceRepository.Update(deviceInDb);
+                await context.SaveChangesAsync();
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
+        /// URL: api/device/{key}
+        /// </summary>
+        /// <param name="key">Primary key of the table Device.</param>
+        /// <param name="device">Device to be updated.</param>
+        /// <returns>Http status code: NoContent.</returns>
+        [HttpPut]
+        [Route(RouteConstants.DeActivateDevice)]
+        //[AllowAnonymous]
+        public async Task<IActionResult> DeActivateDevice(int key, ActivateDeviceDto activateDeviceDto)
+        {
+            try
+            {
+                if (key != activateDeviceDto.DeviceId)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
+
+                var deviceInDb = await context.DeviceRepository.GetDeviceByKey(activateDeviceDto.DeviceId);
+
+                if (deviceInDb == null)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.NoMatchFoundError);
+
+                deviceInDb.IsActive = false;
+                deviceInDb.IsDeleted = false;
+                deviceInDb.DateModified = DateTime.Now;
+                deviceInDb.ModifiedBy = GetLoggedInUserId();
+
+                context.DeviceRepository.Update(deviceInDb);
+                await context.SaveChangesAsync();
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
         /// URL: api/Device/{key}
         /// </summary>
         /// <param name="key">Primary key of the table Device.</param>
@@ -219,13 +293,14 @@ namespace Api.Controllers
                 if (devicetInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
-                var checkIfDeviceIsAssigned = await context.IdentifiedAssignDeviceRepository.FirstOrDefaultAsync(x => x.IsDeleted == false && x.DeviceId == key);
+                //var checkIfDeviceIsAssigned = await context.IdentifiedAssignDeviceRepository.FirstOrDefaultAsync(x => x.IsDeleted == false && x.DeviceId == key);
 
-                if (checkIfDeviceIsAssigned == null)
-                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceCannotBeDeleted);
+                //if (checkIfDeviceIsAssigned == null)
+                //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceCannotBeDeleted);
 
                 devicetInDb.DateModified = DateTime.Now;
                 devicetInDb.IsDeleted = true;
+                devicetInDb.IsActive = false;
                 devicetInDb.ModifiedBy = GetLoggedInUserId();
 
                 context.DeviceRepository.Update(devicetInDb);

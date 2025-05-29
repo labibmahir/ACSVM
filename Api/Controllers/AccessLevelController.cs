@@ -120,7 +120,7 @@ namespace Api.Controllers
                         PageSize = paginationDto.PageSize,
                         TotalItems = await context.AccessLevelRepository.GetAccessLevelsCount(paginationDto)
                     };
-
+                    accessLevelsDto.TotalPages = (int)Math.Ceiling((double)accessLevelsDto.TotalItems / accessLevelsDto.PageSize);
                     return Ok(accessLevelsDto);
 
                 }

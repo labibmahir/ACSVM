@@ -84,7 +84,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadUserAccountByKey)]
-       // [Authorize]
+         [Authorize]
         public async Task<IActionResult> ReadUserAccountByKey(Guid key)
         {
             try
@@ -112,7 +112,7 @@ namespace Api.Controllers
         /// <returns>A list of user accounts.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadUserAccounts)]
-       // [Authorize]
+         [Authorize]
         public async Task<IActionResult> ReadUserAccount([FromQuery] UserAccountFilterDto userAccountFilterDto)
         {
             try
@@ -126,6 +126,7 @@ namespace Api.Controllers
                 {
                     int currentPage = userAccountFilterDto.Page;
                     userAccountFilterDto.Page = ((userAccountFilterDto.Page - 1) * (userAccountFilterDto.PageSize));
+
                     var users = await context.UserAccountRepository.GetUserAccounts(userAccountFilterDto);
                     PagedResultDto<UserAccount> userAccountDto = new PagedResultDto<UserAccount>()
                     {
@@ -134,6 +135,8 @@ namespace Api.Controllers
                         PageSize = userAccountFilterDto.PageSize,
                         TotalItems = await context.UserAccountRepository.GetUserAccountsCount(userAccountFilterDto)
                     };
+
+                    userAccountDto.TotalPages = (int)Math.Ceiling((double)userAccountDto.TotalItems / userAccountFilterDto.PageSize);
 
                     return Ok(userAccountDto);
 
@@ -154,7 +157,7 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateUserAccount)]
-       // [Authorize]
+        // [Authorize]
         public async Task<IActionResult> UpdateUserAccount(Guid key, UserAccountDto userAccount)
         {
             try
@@ -255,10 +258,8 @@ namespace Api.Controllers
                 if (user.Password != encryptedPassword)
                     return StatusCode(StatusCodes.Status401Unauthorized, MessageConstants.InvalidLogin);
 
+                int tokenValidityInMinutes = int.Parse(_configuration["JwtSettings:TokenValidityInMinutes"] ?? "30");
 
-                string token = "";
-                token = encryptionHelpers.Encrypt($"{user.Oid}||{user.Username}||{DateTime.UtcNow}")
-                    ;
                 // Prepare user details response with token
                 UserLoginSuccessDto userDetailsDto = new UserLoginSuccessDto
                 {
@@ -269,8 +270,60 @@ namespace Api.Controllers
                     CountryCode = user.CountryCode,
                     CellPhone = user.CellPhone,
                     Username = user.Username,
-                    Token = GenerateJwtToken(user)
+                    Token = GenerateJwtToken(user, DateTime.UtcNow.AddDays(tokenValidityInMinutes)),
+                    RefreshToken = Guid.NewGuid()
+
                 };
+
+                user.RefreshToken = userDetailsDto.RefreshToken;
+                context.UserAccountRepository.Update(user);
+                await context.SaveChangesAsync();
+
+                return StatusCode(StatusCodes.Status202Accepted, userDetailsDto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+        /// <summary>
+        /// URL: api/user-account/login
+        /// Authenticates a user with the provided credentials and returns user details with a token.
+        /// </summary>
+        /// <param name="loginDto">The login credentials, including username and password.</param>
+        /// <returns>A response containing user details and a token on successful login or an appropriate error response.</returns>
+        [HttpPost]
+        [Route(RouteConstants.RefreshToken)]
+        [AllowAnonymous]
+        public async Task<IActionResult> RefreshToken(RefreshTokenDto refreshTokenDto)
+        {
+            try
+            {
+
+                var user = await context.UserAccountRepository.GetUserAccountByUsername(refreshTokenDto.UserName);
+
+                if (user == null)
+                    return StatusCode(StatusCodes.Status401Unauthorized, MessageConstants.UserNameNotExist);
+
+                if (user.RefreshToken != refreshTokenDto.RefreshToken)
+                    return StatusCode(StatusCodes.Status401Unauthorized, MessageConstants.InvalidRefreshToken);
+                ;
+                // Prepare user details response with token
+                UserLoginSuccessDto userDetailsDto = new UserLoginSuccessDto
+                {
+                    Oid = user.Oid,
+                    Firstname = user.FirstName,
+                    Surname = user.Surname,
+                    Email = user.Email,
+                    CountryCode = user.CountryCode,
+                    CellPhone = user.CellPhone,
+                    Username = user.Username,
+                    Token = GenerateJwtToken(user, DateTime.UtcNow.AddDays(7)),
+                    RefreshToken=Guid.NewGuid()
+                };
+                user.RefreshToken = userDetailsDto.RefreshToken;
+                context.UserAccountRepository.Update(user);
+                await context.SaveChangesAsync();
 
                 return StatusCode(StatusCodes.Status202Accepted, userDetailsDto);
             }
@@ -316,13 +369,15 @@ namespace Api.Controllers
             }
         }
 
-        private string GenerateJwtToken(UserAccount user)
+        private string GenerateJwtToken(UserAccount user, DateTime tokenValidity)
         {
 
             int tokenValidityInMinutes = int.Parse(_configuration["JwtSettings:TokenValidityInMinutes"]);
             string securityKey = _configuration["JwtSettings:SecurityKey"];
 
-            var tokenExpiryTimeStamp = DateTime.UtcNow.AddMinutes(tokenValidityInMinutes);
+            /// var tokenExpiryTimeStamp = DateTime.UtcNow.AddMinutes(tokenValidityInMinutes);
+          //  var tokenExpiryTimeStamp = DateTime.UtcNow.AddDays(1);
+            var tokenExpiryTimeStamp = tokenValidity;
             var tokenKey = Encoding.ASCII.GetBytes(securityKey);
 
             var claimsIdentity = new ClaimsIdentity(new List<Claim>
@@ -349,6 +404,7 @@ namespace Api.Controllers
 
             return token;
         }
+
 
     }
 }

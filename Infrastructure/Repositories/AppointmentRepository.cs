@@ -147,8 +147,12 @@ namespace Infrastructure.Repositories
                     var accessLevels = await context.IdentifiedAssignDevices.Include(d => d.Device).ThenInclude(a => a.AccessLevel).Where(x => x.IsDeleted == false && x.VisitorId == item.VisitorId && x.Device.AccessLevelId != null).ToListAsync();
                     if (result != null)
                     {
-                        //  result.AssignedAccessLevelIdToVisitor = accessLevels.Select(x => x.Device.AccessLevelId.Value).Distinct().ToList();
-                        item.AssignedAccessLevelToVisitor = accessLevels.Select(x => x.Device.AccessLevel).Distinct().ToList();
+                        //  result.AssignedAccessLevelIdToVisitor = accessLevels.Select(x => x.Device.AccessLevelId.Value).Distinct().ToList(); 
+                        item.AssignedAccessLevelToVisitor = accessLevels.Select(x => new AccessLevel()
+                        {
+                            Oid = x.Device.AccessLevel.Oid,
+                            Description = x.Device.AccessLevel.Description
+                        }).Distinct().ToList();
                     }
                 }
                 return result;
@@ -208,7 +212,8 @@ namespace Infrastructure.Repositories
                 {
                     Oid = x.Oid,
                     Address = x.Vistor.Address,
-                    FullName = x.Vistor.FirstName + " " + x.Vistor.Surname,
+                    Firstname = x.Vistor.FirstName,
+                    Surname = x.Vistor.Surname,
                     IsCancelled = x.IsCancelled,
                     AppointmentDate = x.AppointmentDate,
                     Email = x.Vistor.Email,
@@ -235,7 +240,63 @@ namespace Infrastructure.Repositories
                     var accessLevels = await context.IdentifiedAssignDevices.Include(d => d.Device).ThenInclude(a => a.AccessLevel).Where(x => x.IsDeleted == false && x.VisitorId == result.VisitorId && x.Device.AccessLevelId != null).ToListAsync();
 
                     //  result.AssignedAccessLevelIdToVisitor = accessLevels.Select(x => x.Device.AccessLevelId.Value).Distinct().ToList();
-                    result.AssignedAccessLevelToVisitor = accessLevels.Select(x => x.Device.AccessLevel).Distinct().ToList();
+                    result.AssignedAccessLevelToVisitor = accessLevels.Select(x => new AccessLevel()
+                    {
+                        Oid = x.Device.AccessLevel.Oid,
+                        Description = x.Device.AccessLevel.Description
+                    }).Distinct().ToList();
+                }
+                return result;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+        public async Task<VisitorLastAppointmentDetailDto> GetLastAppointmentByPhoneNo(string phoneNo)
+        {
+
+            try
+            {
+                var query = context.Appointments.AsNoTracking().Include(v => v.Vistor).Include(i => i.IdentifiedAssignedAppointments).Include(v => v.Vistor)
+                    .ThenInclude(pr => pr.PersonImages).Where(x => x.Vistor.PhoneNumber.ToLower().Trim() == phoneNo && x.IsDeleted == false).AsQueryable();
+
+                var result = await query.OrderByDescending(x => x.AppointmentDate).Select(x => new VisitorLastAppointmentDetailDto()
+                {
+                    Oid = x.Oid,
+                    Address = x.Vistor.Address,
+                    Firstname = x.Vistor.FirstName,
+                    Surname = x.Vistor.Surname,
+                    IsCancelled = x.IsCancelled,
+                    AppointmentDate = x.AppointmentDate,
+                    Email = x.Vistor.Email,
+                    PhoneNumber = x.Vistor.PhoneNumber,
+                    Persons = x.IdentifiedAssignedAppointments.Select(p => new Person()
+                    {
+                        FirstName = p.Person.FirstName,
+                        Surname = p.Person.Surname,
+                        Gender = p.Person.Gender,
+                        Department = p.Person.Department,
+                        Email = p.Person.Email,
+                        PhoneNumber = p.Person.PhoneNumber,
+                        Oid = p.Person.Oid
+                    }).ToList(),
+                    VisitorNumber = x.Vistor.VisitorNumber,
+                    VisitorId = x.VisitorId,
+                    VisitorImageBase64 = x.Vistor.PersonImages.Where(x => x.IsDeleted == false).FirstOrDefault() == null ? "" : x.Vistor.PersonImages.Where(x => x.IsDeleted == false).FirstOrDefault().ImageBase64,
+                    //AssignedDevicesIdToVisitor = x.Vistor.IdentifiedAssignDevices.Select(d => d.Device.Oid).ToList(),
+                    AssignedDevicesToVisitor = x.Vistor.IdentifiedAssignDevices.Select(d => d.Device).ToList(),
+
+                }).FirstOrDefaultAsync();
+                if (result != null)
+                {
+                    var accessLevels = await context.IdentifiedAssignDevices.Include(d => d.Device).ThenInclude(a => a.AccessLevel).Where(x => x.IsDeleted == false && x.VisitorId == result.VisitorId && x.Device.AccessLevelId != null).ToListAsync();
+
+                    //  result.AssignedAccessLevelIdToVisitor = accessLevels.Select(x => x.Device.AccessLevelId.Value).Distinct().ToList();
+                    result.AssignedAccessLevelToVisitor = accessLevels.Select(x =>new AccessLevel() {
+                     Oid = x.Device.AccessLevel.Oid,
+                     Description = x.Device.AccessLevel.Description
+                    }).Distinct().ToList();
                 }
                 return result;
             }

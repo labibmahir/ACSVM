@@ -11,7 +11,9 @@ namespace Domain.Dto
     {
         public Guid Oid { get; set; }
         public int? OrganizationId { get; set; }
-        public string FullName { get; set; }
+        public string Firstname { get; set; }
+        
+        public string Surname { get; set; }
         public string VisitorNumber { get; set; }
         public string Email { get; set; }
 

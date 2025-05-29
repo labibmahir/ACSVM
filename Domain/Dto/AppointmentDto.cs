@@ -27,8 +27,7 @@ namespace Domain.Dto
 
         [Required]
         public string Surname { get; set; }
-        //[MaxLength(50)]
-        //public string VisitorNumber { get; set; }
+
         public string Email { get; set; }
 
         [Required]
@@ -54,13 +53,8 @@ namespace Domain.Dto
 
         public Enums.UserVerifyMode? VisitorVerifyMode { get; set; }
         
-        public IFormFile Image { get; set; }
-        //[Required]
-        //public bool IsCompleted { get; set; }
-
-        //[Required]
-        //public bool IsCancelled { get; set; }
-
+        [Required]
+        public Guid CardId { get; set; }
 
     }
 }

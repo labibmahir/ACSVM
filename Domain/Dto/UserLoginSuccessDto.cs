@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Domain.Dto
 {
-  public  class UserLoginSuccessDto
-    {  
+    public class UserLoginSuccessDto
+    {
         /// <summary>
-       /// Gets or sets the unique identifier for the user.
-       /// </summary>
+        /// Gets or sets the unique identifier for the user.
+        /// </summary>
         public Guid? Oid { get; set; }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace Domain.Dto
         /// </summary>
         public string CellPhone { get; set; }
 
- 
+
         /// <summary>
         /// Gets or sets the username of the user.
         /// </summary>
@@ -50,5 +50,7 @@ namespace Domain.Dto
         /// This is typically used for session management.
         /// </summary>
         public string Token { get; set; }
+
+        public Guid RefreshToken { get; set;  }
     }
 }
