@@ -39,6 +39,8 @@ namespace Utilities.Constants
         public const string ReadDeviceByKey = "device/key/{key}";
 
         public const string UpdateDevice = "device/{key}";
+        public const string ActivateDevice = "device/activate/{key}";
+        public const string DeActivateDevice = "device/deactivate/{key}";
 
         public const string DeleteDevice = "device/{key}";
         #endregion
