@@ -83,5 +83,15 @@
 
             CustomSQLServer = 5
         }
+
+        public enum DeviceAction : byte
+        {
+            Add = 1,
+
+            Update = 2,
+
+            Read = 3,
+            Delete = 4
+        }
     }
 }

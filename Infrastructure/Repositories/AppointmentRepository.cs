@@ -60,7 +60,7 @@ namespace Infrastructure.Repositories
         {
             try
             {
-                return await FirstOrDefaultAsync(x => x.IsDeleted == false && x.IsCancelled == false && x.IsCompleted == false && x.AppointmentDate <= DateTime.Now);
+                return await FirstOrDefaultAsync(x => x.IsDeleted == false && x.VisitorId == VisitorId && x.IsCancelled == false && x.IsCompleted == false && x.AppointmentDate >= DateTime.Now);
             }
             catch
             {
@@ -72,7 +72,7 @@ namespace Infrastructure.Repositories
         {
             try
             {
-                return await FirstOrDefaultAsync(x => x.IsDeleted == false && x.IsCancelled == false && x.IsCompleted == false && x.AppointmentDate.Date == authenticationDate.Date && x.StartTime >= authenticationTime && x.EndTime <= authenticationTime);
+                return await FirstOrDefaultAsync(x => x.IsDeleted == false && x.VisitorId == VisitorId && x.IsCancelled == false && x.IsCompleted == false && x.AppointmentDate.Date == authenticationDate.Date && x.StartTime <= authenticationTime && x.EndTime >= authenticationTime);
             }
             catch
             {
@@ -291,9 +291,10 @@ namespace Infrastructure.Repositories
                     var accessLevels = await context.IdentifiedAssignDevices.Include(d => d.Device).ThenInclude(a => a.AccessLevel).Where(x => x.IsDeleted == false && x.VisitorId == result.VisitorId && x.Device.AccessLevelId != null).ToListAsync();
 
                     //  result.AssignedAccessLevelIdToVisitor = accessLevels.Select(x => x.Device.AccessLevelId.Value).Distinct().ToList();
-                    result.AssignedAccessLevelToVisitor = accessLevels.Select(x =>new AccessLevel() {
-                     Oid = x.Device.AccessLevel.Oid,
-                     Description = x.Device.AccessLevel.Description
+                    result.AssignedAccessLevelToVisitor = accessLevels.Select(x => new AccessLevel()
+                    {
+                        Oid = x.Device.AccessLevel.Oid,
+                        Description = x.Device.AccessLevel.Description
                     }).Distinct().ToList();
                 }
                 return result;

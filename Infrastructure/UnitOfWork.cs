@@ -243,6 +243,48 @@ namespace Infrastructure
         }
         #endregion ClientFieldMappingRepository
 
+        #region DeviceSynchronizerRepository
+        private IDeviceSynchronizerRepository deviceSynchronizerRepository;
+        public IDeviceSynchronizerRepository DeviceSynchronizerRepository
+        {
+            get
+            {
+                if (deviceSynchronizerRepository == null)
+                    deviceSynchronizerRepository = new DeviceSynchronizerRepository(context);
+
+                return deviceSynchronizerRepository;
+            }
+        }
+        #endregion ClientFieldMappingRepository
+
+        #region IdentifiedSyncDeviceRepository
+        private IIdentifiedSyncDeviceRepository identifiedSyncDeviceRepository;
+        public IIdentifiedSyncDeviceRepository IdentifiedSyncDeviceRepository
+        {
+            get
+            {
+                if (identifiedSyncDeviceRepository == null)
+                    identifiedSyncDeviceRepository = new IdentifiedSyncDeviceRepository(context);
+
+                return identifiedSyncDeviceRepository;
+            }
+        }
+        #endregion IIdentifiedSyncDeviceRepository
+
+        #region DeviceLogRepository
+        private IDeviceLogRepository deviceLogRepository;
+        public IDeviceLogRepository DeviceLogRepository
+        {
+            get
+            {
+                if (deviceLogRepository == null)
+                    deviceLogRepository = new DeviceLogRepository(context);
+
+                return deviceLogRepository;
+            }
+        }
+        #endregion DeviceLogRepository
+
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()
         {

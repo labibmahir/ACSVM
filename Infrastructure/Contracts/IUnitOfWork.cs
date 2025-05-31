@@ -35,5 +35,8 @@ namespace Infrastructure.Contracts
         IIdentifiedAssignedAppointmentRepository IdentifiedAssignedAppointmentRepository { get; }
         IClientDBDetailRepository ClientDBDetailRepository { get; }
         IClientFieldMappingRepository ClientFieldMappingRepository { get; }
+        IDeviceSynchronizerRepository DeviceSynchronizerRepository { get; }
+        IIdentifiedSyncDeviceRepository IdentifiedSyncDeviceRepository { get; }
+        IDeviceLogRepository DeviceLogRepository { get; }
     }
 }

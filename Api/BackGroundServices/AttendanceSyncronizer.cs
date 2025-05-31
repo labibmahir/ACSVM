@@ -1,10 +1,12 @@
 ﻿using Api.NotificationHub;
+using Domain.Dto;
 using Domain.Dto.HIKVision;
 using Domain.Entities;
 using Infrastructure.Contracts;
 using Microsoft.AspNetCore.SignalR;
 using SurveillanceDevice.Integration.HIKVision;
 using System.Net.NetworkInformation;
+using Utilities.Constants;
 
 namespace Api.BackGroundServices
 {
@@ -203,51 +205,269 @@ namespace Api.BackGroundServices
                     foreach (var item in assignedCards)
                     {
                         var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(item.VisitorId.Value, DateTime.Now.Date, DateTime.Now.TimeOfDay);
-                        VMCardInfo vMCardInfo = new VMCardInfo()
-                        {
-                            addCard = true,
-                            cardNo = item.Card.CardNumber,
-                            cardType = "normalCard",
-                            employeeNo = item.Visitor.VisitorNumber
-                        };
-                        var assignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(item.VisitorId.Value);
-                        foreach (var assignDevice in assignedDevices)
-                        {
-                            var result = await visionMachineService.AddCard(assignDevice.Device, vMCardInfo);
 
-                            if (!result.Success)
+                        if (checkAppointment != null)
+                        {
+                            VMCardInfo vMCardInfo = new VMCardInfo()
                             {
+                                addCard = true,
+                                cardNo = item.Card.CardNumber,
+                                cardType = "normalCard",
+                                employeeNo = item.Visitor.VisitorNumber
+                            };
+                            var assignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(item.VisitorId.Value);
+                            bool atleastIn1Device = false;
+                            bool synInAllDevice = true;
+                            foreach (var assignDevice in assignedDevices)
+                            {
+                                var result = await visionMachineService.AddCard(assignDevice.Device, vMCardInfo);
 
+                                if (result.Success)
+                                {
+                                    atleastIn1Device = true;
+                                }
+                                else
+                                {
+                                    synInAllDevice = false;
+                                }
+                            }
+                            if (atleastIn1Device)
+                            {
+                                Card card = item.Card;
+                                card.Status = Utilities.Constants.Enums.Status.Active;
+                                if (synInAllDevice)
+                                    card.IsSync = true;
+                                else
+                                    card.IsSync = false;
+
+                                context.CardRepository.Update(card);
+                                await context.SaveChangesAsync();
                             }
                         }
-                        Card card = item.Card;
-                        card.Status = Utilities.Constants.Enums.Status.Active;
-                        context.CardRepository.Update(card);
-                        await context.SaveChangesAsync();
                     }
 
-                    var assignedActiveCards = await context.IdentifiedAssignCardRepository.GetAllInActiveVisitorIdentifiedAssignCards();
-                    foreach (var item in assignedCards)
+                    var assignedActiveCards = await context.IdentifiedAssignCardRepository.GetAllActiveVisitorIdentifiedAssignCards();
+                    foreach (var item in assignedActiveCards)
                     {
                         var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(item.VisitorId.Value, DateTime.Now.Date, DateTime.Now.TimeOfDay);
-                        if (checkAppointment != null)
+                        if (checkAppointment == null)
                         {
                             VMCardInfoDeleteRequest vMCardInfoDeleteRequest = new VMCardInfoDeleteRequest()
                             {
                                 CardNoList = new List<VMCardNoListItem?>() { new VMCardNoListItem() { cardNo = item.Card.CardNumber } }
                             };
                             var assignedDevices = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(item.VisitorId.Value);
+                            bool atlestin1Device = false;
+                            bool syynInAllDevice = true;
                             foreach (var assignDevice in assignedDevices)
                             {
                                 var result = await visionMachineService.DeleteCard(assignDevice.Device, vMCardInfoDeleteRequest);
+                                if (result.Success)
+                                    atlestin1Device = true;
+                                else
+                                    syynInAllDevice = false;
                             }
-                            Card card = item.Card;
-                            card.Status = Utilities.Constants.Enums.Status.Inactive;
-                            context.CardRepository.Update(card);
-                            await context.SaveChangesAsync();
+                            if (atlestin1Device)
+                            {
+                                Card card = item.Card;
+                                card.Status = Utilities.Constants.Enums.Status.Inactive;
+                                if (syynInAllDevice)
+                                    card.IsSync = true;
+                                else
+                                    card.IsSync = false;
+
+                                context.CardRepository.Update(card);
+                                await context.SaveChangesAsync();
+                            }
                         }
                     }
 
+                    #endregion
+
+                    #region Vistor Syn To Device
+                    try
+                    {
+                        var deviceSync = await context.DeviceSynchronizerRepository.QueryAsync(x => x.IsDeleted == false && x.IsSync != true && x.VisitorId != null);
+                        foreach (var deviceSynchronizer in deviceSync)
+                        {
+                            var visitor = await context.VisitorRepository.GetVisitorByKey(deviceSynchronizer.VisitorId.Value);
+                            if (visitor != null)
+                            {
+                                List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
+
+                                VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
+                                {
+                                    doorNo = 1,
+                                    planTemplateNo = "1",
+                                };
+
+                                vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
+                                VMUserInfo vMUserInfo = new VMUserInfo()
+                                {
+                                    employeeNo = visitor.VisitorNumber,
+                                    deleteUser = false,
+                                    name = visitor.FirstName + " " + visitor.Surname,
+                                    userType = "normal",
+                                    closeDelayEnabled = true,
+                                    Valid = new VMEffectivePeriod()
+                                    {
+                                        enable = true,
+                                        beginTime = visitor.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                                        endTime = visitor.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                                        timeType = "local"
+                                    },
+                                    doorRight = "1",
+                                    RightPlan = vMDoorPermissionSchedules,
+                                    localUIRight = false,
+                                    userVerifyMode = visitor.UserVerifyMode switch
+                                    {
+                                        Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
+                                        Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
+                                        Enums.UserVerifyMode.card => "card",
+                                        _ => "faceAndFpAndCard"//this is default
+                                    },
+                                    checkUser = true,
+                                    addUser = true,
+                                    callNumbers = new List<string> { " 1-1-1-401" },
+                                    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
+                                    gender = visitor.Gender switch
+                                    {
+                                        Enums.Gender.Male => "male",
+                                        Enums.Gender.Female => "female",
+                                        _ => "other"
+                                    },
+                                };
+
+
+                                var identifiedSynDevices = await context.IdentifiedSyncDeviceRepository.QueryAsync(x => x.IsDeleted == false && x.IsSync != true && x.DeviceSynchronizerId == deviceSynchronizer.Oid && x.TryCount <= 50);
+                                bool isSynceAllDevice = true;
+                                foreach (var synDevice in identifiedSynDevices)
+                                {
+                                    synDevice.TryCount = synDevice.TryCount + 1;
+                                    var device = await context.DeviceRepository.GetDeviceByKey(synDevice.DeviceId);
+                                    if (device != null)
+                                    {
+                                        if (await IsDeviceActive(device.DeviceIP))
+                                        {
+                                            if (synDevice.Action == Enums.DeviceAction.Add)
+                                            {
+                                                var vService = await visionMachineService.AddUser(device, vMUserInfo);
+                                                var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                                                if (res.StatusCode != 1)
+                                                {
+                                                    DeviceLog deviceLog = new DeviceLog()
+                                                    {
+                                                        DeviceId = synDevice.DeviceId,
+                                                        DeviceResponse = vService,
+                                                        Message = "Failed Upadting Visitor Record",
+                                                        Oid = Guid.NewGuid(),
+                                                        VisitorId = deviceSynchronizer.VisitorId,
+                                                        IsDeleted = false,
+                                                        IsSync = false
+                                                    };
+                                                    synDevice.IsSync = false;
+                                                    context.IdentifiedSyncDeviceRepository.Add(synDevice);
+                                                    context.DeviceLogRepository.Add(deviceLog);
+                                                    isSynceAllDevice = false;
+                                                }
+                                                else
+                                                {
+                                                    synDevice.IsSync = true;
+                                                    context.IdentifiedSyncDeviceRepository.Update(synDevice);
+                                                }
+                                            }
+                                            else if (synDevice.Action == Enums.DeviceAction.Update)
+                                            {
+                                                var vService = await visionMachineService.UpdateUser(device, vMUserInfo);
+                                                var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                                                if (res.StatusCode != 1)
+                                                {
+                                                    DeviceLog deviceLog = new DeviceLog()
+                                                    {
+                                                        DeviceId = synDevice.DeviceId,
+                                                        DeviceResponse = vService,
+                                                        Message = "Failed Upadting Visitor Record",
+                                                        Oid = Guid.NewGuid(),
+                                                        VisitorId = deviceSynchronizer.VisitorId,
+                                                        IsDeleted = false,
+                                                        IsSync = false
+                                                    };
+                                                    synDevice.IsSync = false;
+                                                    context.IdentifiedSyncDeviceRepository.Add(synDevice);
+                                                    context.DeviceLogRepository.Add(deviceLog);
+                                                    isSynceAllDevice = false;
+
+                                                }
+                                                else
+                                                {
+                                                    synDevice.IsSync = true;
+                                                    context.IdentifiedSyncDeviceRepository.Update(synDevice);
+                                                }
+                                            }
+                                            else if (synDevice.Action == Enums.DeviceAction.Delete)
+                                            {
+                                                VMUserInfoDetailsDeleteRequest vMCardInfoDeleteRequest = new VMUserInfoDetailsDeleteRequest()
+                                                {
+                                                    EmployeeNoList = new List<VMEmployeeNoListItem?>() { new() { employeeNo = visitor.VisitorNumber } }
+                                                };
+
+                                                var vService = await visionMachineService.DeleteUserWithDetails(device, vMCardInfoDeleteRequest);
+                                                var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                                                if (res.StatusCode != 1)
+                                                {
+                                                    DeviceLog deviceLog = new DeviceLog()
+                                                    {
+                                                        DeviceId = synDevice.DeviceId,
+                                                        DeviceResponse = vService,
+                                                        Message = "Failed Delete Visitor Record",
+                                                        Oid = Guid.NewGuid(),
+                                                        VisitorId = deviceSynchronizer.VisitorId,
+                                                        IsDeleted = false,
+                                                        IsSync = false
+                                                    };
+                                                    synDevice.IsSync = false;
+                                                    context.IdentifiedSyncDeviceRepository.Add(synDevice);
+                                                    context.DeviceLogRepository.Add(deviceLog);
+                                                    isSynceAllDevice = false;
+
+                                                }
+                                                else
+                                                {
+                                                    synDevice.IsSync = true;
+                                                    context.IdentifiedSyncDeviceRepository.Update(synDevice);
+                                                }
+                                            }
+                                            await context.SaveChangesAsync();
+                                        }
+                                        else
+                                        {
+                                            DeviceLog deviceLog = new DeviceLog()
+                                            {
+                                                DeviceId = synDevice.DeviceId,
+                                                DeviceResponse = "",
+                                                Message = "Device In Active",
+                                                Oid = Guid.NewGuid(),
+                                                VisitorId = deviceSynchronizer.VisitorId,
+                                                IsDeleted = false,
+                                                IsSync = false
+                                            };
+                                            synDevice.IsSync = false;
+                                            isSynceAllDevice = false;
+                                            context.DeviceLogRepository.Add(deviceLog);
+                                            context.IdentifiedSyncDeviceRepository.Update(synDevice);
+                                        }
+                                    }
+                                    deviceSynchronizer.IsSync = isSynceAllDevice;
+                                    context.DeviceSynchronizerRepository.Update(deviceSynchronizer);
+                                    await context.SaveChangesAsync();
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
                     #endregion
 
                 }

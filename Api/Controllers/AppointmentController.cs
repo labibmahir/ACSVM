@@ -17,6 +17,8 @@ using Domain.Dto.PaginationFiltersDto;
 using System.Drawing.Imaging;
 using System.Drawing;
 using System;
+using Api.BackGroundServices.ProccessContract;
+using Api.BackGroundServices.ProcessImplimentations;
 
 namespace Api.Controllers
 {
@@ -29,12 +31,14 @@ namespace Api.Controllers
         private readonly ILogger<AppointmentController> logger;
         private readonly IConfiguration _configuration;
         private readonly IHikVisionMachineService _visionMachineService;
-        public AppointmentController(IUnitOfWork context, ILogger<AppointmentController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService)
+        private readonly IProgressManager progressManager;
+        public AppointmentController(IUnitOfWork context, ILogger<AppointmentController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService, IProgressManager progressManager)
         {
             this.context = context;
             this.logger = logger;
             _configuration = configuration;
             _visionMachineService = visionMachineService;
+            this.progressManager = progressManager;
         }
         /// <summary>
         /// Default constructor.
@@ -47,7 +51,6 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreateAppointment)]
-        [Consumes("multipart/form-data")]
         public async Task<ActionResult<Person>> CreateAppointment(AppointmentDto appointmentDto)
         {
             try
@@ -125,18 +128,18 @@ namespace Api.Controllers
 
                 foreach (var device in devices)
                 {
-                    if (!await IsDeviceActive(device.DeviceIP))
-                    {
-                        // devices = devices.Where(x => x.Oid != device.Oid).ToList();
-                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
+                    //if (!await IsDeviceActive(device.DeviceIP))
+                    //{
+                    //    // devices = devices.Where(x => x.Oid != device.Oid).ToList();
+                    //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
 
-
-                    }
+                    //}
 
                 }
 
                 List<int> visitorToBeUpdateInDevices = new List<int>();
                 List<int> visitorToBeAddedInDevices = new List<int>();
+                List<int> visitorToBeDeletedFromDevices = new List<int>();
 
                 Visitor visitor = new Visitor();
                 if (visitorByPhone == null)
@@ -163,17 +166,20 @@ namespace Api.Controllers
                     };
                     context.VisitorRepository.Add(visitor);
                     #region assigning Card to visitor
-                    IdentifiedAssignCard identifiedAssignCard = new IdentifiedAssignCard()
+                    if (!string.IsNullOrEmpty(appointmentDto.CardNumber))
                     {
-                        IsDeleted = false,
-                        CardId = visitorCard.Oid,
-                        VisitorId = visitor.Oid,
-                        IsPermanent = false,
-                        Oid = Guid.NewGuid(),
-                        DateCreated = DateTime.Now,
-                        CreatedBy = GetLoggedInUserId()
-                    };
-                    context.IdentifiedAssignCardRepository.Add(identifiedAssignCard);
+                        IdentifiedAssignCard identifiedAssignCard = new IdentifiedAssignCard()
+                        {
+                            IsDeleted = false,
+                            CardId = visitorCard.Oid,
+                            VisitorId = visitor.Oid,
+                            IsPermanent = false,
+                            Oid = Guid.NewGuid(),
+                            DateCreated = DateTime.Now,
+                            CreatedBy = GetLoggedInUserId()
+                        };
+                        context.IdentifiedAssignCardRepository.Add(identifiedAssignCard);
+                    }
                     #endregion
                     visitorToBeAddedInDevices = devices.Select(x => x.Oid).ToList();
                 }
@@ -247,86 +253,88 @@ namespace Api.Controllers
 
                     visitorToBeUpdateInDevices = newAssignedDevice.Intersect(identifiedAlreadyAssignedDevice).ToList();
                     visitorToBeAddedInDevices = newAssignedDevice.Except(identifiedAlreadyAssignedDevice).ToList();
+                    visitorToBeDeletedFromDevices = identifiedAlreadyAssignedDevice.Except(newAssignedDevice).ToList();
+
                     foreach (var item in identifiedAssignedDeviceByVisitor)
                         context.IdentifiedAssignDeviceRepository.Delete(new IdentifiedAssignDevice() { Oid = item.Oid });
                 }
 
-                List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
+                //List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
 
-                VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
-                {
-                    doorNo = 1,
-                    planTemplateNo = "1",
-                };
+                //VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
+                //{
+                //    doorNo = 1,
+                //    planTemplateNo = "1",
+                //};
 
-                vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
-
-
-                VMUserInfo vMUserInfo = new VMUserInfo()
-                {
-                    employeeNo = visitor.VisitorNumber,
-                    deleteUser = false,
-                    name = visitor.FirstName + " " + visitor.Surname,
-                    userType = "normal",
-                    closeDelayEnabled = true,
-                    Valid = new VMEffectivePeriod()
-                    {
-                        enable = true,
-                        beginTime = visitor.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        endTime = visitor.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        timeType = "local"
-                    },
-                    doorRight = "1",
-                    RightPlan = vMDoorPermissionSchedules,
-                    localUIRight = false,
-                    userVerifyMode = visitor.UserVerifyMode switch
-                    {
-                        Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
-                        Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
-                        Enums.UserVerifyMode.card => "card",
-                        _ => "faceAndFpAndCard"//this is default
-                    },
-                    checkUser = true,
-                    addUser = true,
-                    callNumbers = new List<string> { " 1-1-1-401" },
-                    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
-                    gender = visitor.Gender switch
-                    {
-                        Enums.Gender.Male => "male",
-                        Enums.Gender.Female => "female",
-                        _ => "other"
-                    },
-                };
+                //vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
 
 
+                //VMUserInfo vMUserInfo = new VMUserInfo()
+                //{
+                //    employeeNo = visitor.VisitorNumber,
+                //    deleteUser = false,
+                //    name = visitor.FirstName + " " + visitor.Surname,
+                //    userType = "normal",
+                //    closeDelayEnabled = true,
+                //    Valid = new VMEffectivePeriod()
+                //    {
+                //        enable = true,
+                //        beginTime = visitor.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                //        endTime = visitor.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                //        timeType = "local"
+                //    },
+                //    doorRight = "1",
+                //    RightPlan = vMDoorPermissionSchedules,
+                //    localUIRight = false,
+                //    userVerifyMode = visitor.UserVerifyMode switch
+                //    {
+                //        Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
+                //        Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
+                //        Enums.UserVerifyMode.card => "card",
+                //        _ => "faceAndFpAndCard"//this is default
+                //    },
+                //    checkUser = true,
+                //    addUser = true,
+                //    callNumbers = new List<string> { " 1-1-1-401" },
+                //    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
+                //    gender = visitor.Gender switch
+                //    {
+                //        Enums.Gender.Male => "male",
+                //        Enums.Gender.Female => "female",
+                //        _ => "other"
+                //    },
+                //};
 
-                if (visitorToBeAddedInDevices.Count() > 0)
-                {
-                    foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
-                    {
-                        var vService = await _visionMachineService.AddUser(device, vMUserInfo);
-                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
-                        if (res.StatusCode != 1)
-                        {
-                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                        }
-
-                    }
-                }
-                if (visitorToBeUpdateInDevices.Count() > 0)
-                {
-                    foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
-                    {
-                        var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
-                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
-                        if (res.StatusCode != 1)
-                        {
-                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                        }
 
 
-                    }
-                }
+                //if (visitorToBeAddedInDevices.Count() > 0)
+                //{
+                //    foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
+                //    {
+                //        //var vService = await _visionMachineService.AddUser(device, vMUserInfo);
+                //        //var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                //        //if (res.StatusCode != 1)
+                //        //{
+                //        //    return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                //        //}
+
+                //    }
+                //}
+                //if (visitorToBeUpdateInDevices.Count() > 0)
+                //{
+                //    foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
+                //    {
+                //        //var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                //        //var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                //        //if (res.StatusCode != 1)
+                //        //{
+                //        //    return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                //        //}
+
+
+                //    }
+                //}
 
 
                 // context.VisitorRepository.Add(visitor);
@@ -349,7 +357,74 @@ namespace Api.Controllers
 
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                 await context.SaveChangesAsync();
+                #region DeviceSynchronizer
+                DeviceSynchronizer deviceSynchronizer = new DeviceSynchronizer()
+                {
+                    CreatedBy = GetLoggedInUserId(),
+                    DateCreated = DateTime.Now,
+                    IsDeleted = false,
+                    IsSync = false,
+                    VisitorId = visitor.Oid,
+                    OrganizationId = visitor.OrganizationId,
+                    Oid = Guid.NewGuid(),
+                };
+                context.DeviceSynchronizerRepository.Add(deviceSynchronizer);
+                List<IdentifiedSyncDevice> identifiedSyncDevices = new List<IdentifiedSyncDevice>();
 
+                foreach (var item in visitorToBeAddedInDevices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Add,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+                foreach (var item in visitorToBeUpdateInDevices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Update,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+
+                foreach (var item in visitorToBeDeletedFromDevices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Delete,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+                context.IdentifiedSyncDeviceRepository.AddRange(identifiedSyncDevices);
+                #endregion
                 Appointment appointment = new Appointment()
                 {
                     IsCompleted = false,
@@ -466,7 +541,8 @@ namespace Api.Controllers
                 //    }
                 //}
                 //#endregion
-
+                IProcess importPeople = new DeviceActionProcess(deviceSynchronizer, ProcessPriority.Urgent);
+                await progressManager.AddProcess(importPeople);
                 return Ok(appointment);
             }
             catch (Exception ex)
@@ -600,7 +676,7 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateAppointment)]
-        [Consumes("multipart/form-data")]
+        // [Consumes("multipart/form-data")]
         public async Task<IActionResult> UpdateAppointment(Guid key, AppointmentDto appointmentDto)
         {
             try
@@ -679,14 +755,14 @@ namespace Api.Controllers
                 if (devices.Count() <= 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
 
-                foreach (var device in devices)
-                {
-                    if (!await IsDeviceActive(device.DeviceIP))
-                    {
-                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
+                //foreach (var device in devices)
+                //{
+                //    if (!await IsDeviceActive(device.DeviceIP))
+                //    {
+                //        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
 
-                    }
-                }
+                //    }
+                //}
 
                 appointmentInDb.IsCompleted = false;
                 appointmentInDb.IsDeleted = false;
@@ -728,6 +804,7 @@ namespace Api.Controllers
 
                 List<int> visitorToBeUpdateInDevices = new List<int>();
                 List<int> visitorToBeAddedInDevices = new List<int>();
+                List<int> visitorToBeDeletedFromDevices = new List<int>();
 
                 visitorInDb.IsDeleted = false;
                 visitorInDb.ModifiedBy = GetLoggedInUserId();
@@ -793,6 +870,8 @@ namespace Api.Controllers
 
                 visitorToBeUpdateInDevices = newAssignedDevice.Intersect(identifiedAlreadyAssignedDevice).ToList();
                 visitorToBeAddedInDevices = newAssignedDevice.Except(identifiedAlreadyAssignedDevice).ToList();
+                visitorToBeDeletedFromDevices = identifiedAlreadyAssignedDevice.Except(newAssignedDevice).ToList();
+
                 foreach (var item in identifiedAssignedDeviceByVisitor)
                     context.IdentifiedAssignDeviceRepository.Delete(new IdentifiedAssignDevice() { Oid = item.Oid });
 
@@ -815,76 +894,144 @@ namespace Api.Controllers
 
                 List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
 
-                VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
-                {
-                    doorNo = 1,
-                    planTemplateNo = "1",
-                };
+                //VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
+                //{
+                //    doorNo = 1,
+                //    planTemplateNo = "1",
+                //};
 
-                vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
+                //vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
 
-                VMUserInfo vMUserInfo = new VMUserInfo()
-                {
-                    employeeNo = visitorInDb.VisitorNumber,
-                    deleteUser = false,
-                    name = visitorInDb.FirstName + " " + visitorInDb.Surname,
-                    userType = "normal",
-                    closeDelayEnabled = true,
-                    Valid = new VMEffectivePeriod()
-                    {
-                        enable = true,
-                        beginTime = visitorInDb.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        endTime = visitorInDb.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                        timeType = "local"
-                    },
-                    doorRight = "1",
-                    RightPlan = vMDoorPermissionSchedules,
-                    localUIRight = false,
-                    callNumbers = new List<string> { " 1-1-1-401" },
-                    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
-                    userVerifyMode = visitorInDb.UserVerifyMode switch
-                    {
-                        Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
-                        Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
-                        Enums.UserVerifyMode.card => "card",
-                        _ => "faceAndFpAndCard"//this is default
-                    },
-                    gender = visitorInDb.Gender switch
-                    {
-                        Enums.Gender.Male => "male",
-                        Enums.Gender.Female => "female",
-                        _ => "other"
-                    }
-                };
-                if (visitorToBeAddedInDevices.Count() > 0)
-                {
-                    foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
-                    {
-                        var vService = await _visionMachineService.AddUser(device, vMUserInfo);
-                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
-                        if (res.StatusCode != 1)
-                        {
-                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                        }
-                    }
-                }
-                if (visitorToBeUpdateInDevices.Count() > 0)
-                {
-                    foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
-                    {
-                        var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
-                        var updated = await _visionMachineService.UpdateUser(device, vMUserInfo);
-                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(updated);
-                        if (res.StatusCode != 1)
-                        {
-                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                        }
-                    }
-                }
+                //VMUserInfo vMUserInfo = new VMUserInfo()
+                //{
+                //    employeeNo = visitorInDb.VisitorNumber,
+                //    deleteUser = false,
+                //    name = visitorInDb.FirstName + " " + visitorInDb.Surname,
+                //    userType = "normal",
+                //    closeDelayEnabled = true,
+                //    Valid = new VMEffectivePeriod()
+                //    {
+                //        enable = true,
+                //        beginTime = visitorInDb.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                //        endTime = visitorInDb.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                //        timeType = "local"
+                //    },
+                //    doorRight = "1",
+                //    RightPlan = vMDoorPermissionSchedules,
+                //    localUIRight = false,
+                //    callNumbers = new List<string> { " 1-1-1-401" },
+                //    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
+                //    userVerifyMode = visitorInDb.UserVerifyMode switch
+                //    {
+                //        Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
+                //        Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
+                //        Enums.UserVerifyMode.card => "card",
+                //        _ => "faceAndFpAndCard"//this is default
+                //    },
+                //    gender = visitorInDb.Gender switch
+                //    {
+                //        Enums.Gender.Male => "male",
+                //        Enums.Gender.Female => "female",
+                //        _ => "other"
+                //    }
+                //};
+                //if (visitorToBeAddedInDevices.Count() > 0)
+                //{
+                //    //foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
+                //    //{
+                //    //    var vService = await _visionMachineService.AddUser(device, vMUserInfo);
+                //    //    var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                //    //    if (res.StatusCode != 1)
+                //    //    {
+                //    //        return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                //    //    }
+                //    //}
+                //}
+                //if (visitorToBeUpdateInDevices.Count() > 0)
+                //{
+                //    //foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
+                //    //{
+                //    //    var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                //    //    var updated = await _visionMachineService.UpdateUser(device, vMUserInfo);
+                //    //    var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(updated);
+                //    //    if (res.StatusCode != 1)
+                //    //    {
+                //    //        return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                //    //    }
+                //    //}
+                //}
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                 await context.SaveChangesAsync();
 
+                #region DeviceSynchronizer
+                DeviceSynchronizer deviceSynchronizer = new DeviceSynchronizer()
+                {
+                    CreatedBy = GetLoggedInUserId(),
+                    DateCreated = DateTime.Now,
+                    IsDeleted = false,
+                    IsSync = false,
+                    VisitorId = visitorInDb.Oid,
+                    OrganizationId = visitorInDb.OrganizationId,
+                    Oid = Guid.NewGuid(),
+                };
+                context.DeviceSynchronizerRepository.Add(deviceSynchronizer);
+                List<IdentifiedSyncDevice> identifiedSyncDevices = new List<IdentifiedSyncDevice>();
 
+                foreach (var item in visitorToBeAddedInDevices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Add,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+                foreach (var item in visitorToBeUpdateInDevices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Update,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+
+                foreach (var item in visitorToBeDeletedFromDevices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Delete,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+                context.IdentifiedSyncDeviceRepository.AddRange(identifiedSyncDevices);
+                await context.SaveChangesAsync();
+                #endregion
                 //#region addingImage To Device and Db
                 //if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
                 //{
@@ -1003,7 +1150,8 @@ namespace Api.Controllers
                 //    }
                 //}
                 //#endregion
-
+                IProcess importPeople = new DeviceActionProcess(deviceSynchronizer, ProcessPriority.Urgent);
+                await progressManager.AddProcess(importPeople);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }

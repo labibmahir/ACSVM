@@ -38,9 +38,14 @@ namespace Api.BackGroundServices
                     _ = ExportPeopleToDevice(exportProcess);
                 }
 
+                if (process is DeviceActionProcess deviceActionProcess)
+                {
+                    _ = DeviceActions(deviceActionProcess);
+                }
+
             }
         }
-        
+
         private async Task ImportPeopleFromDevice(ImportPeopleFromDeviceProcess process)
         {
             try
@@ -60,7 +65,7 @@ namespace Api.BackGroundServices
 
             }
         }
-        
+
         private async Task ExportPeopleToDevice(ExportPeopleToDeviceProcess process)
         {
             try
@@ -69,6 +74,25 @@ namespace Api.BackGroundServices
                 {
                     var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
                     var logger = scope.ServiceProvider.GetRequiredService<ILogger<ExportPeopleToDeviceProcess>>();
+                    var visionMachineService = scope.ServiceProvider.GetRequiredService<IHikVisionMachineService>();
+
+                    await process.Execute(logger, unitOfWork, visionMachineService);
+                    await _progressManager.RemoveProcess(process.ProcessId);
+                }
+            }
+            catch
+            {
+
+            }
+        }
+        private async Task DeviceActions(DeviceActionProcess process)
+        {
+            try
+            {
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                    var logger = scope.ServiceProvider.GetRequiredService<ILogger<DeviceActionProcess>>();
                     var visionMachineService = scope.ServiceProvider.GetRequiredService<IHikVisionMachineService>();
 
                     await process.Execute(logger, unitOfWork, visionMachineService);

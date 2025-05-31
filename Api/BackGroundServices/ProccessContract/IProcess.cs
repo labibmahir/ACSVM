@@ -24,7 +24,8 @@ namespace Api.BackGroundServices.ProccessContract
         ImportingPeopleFromDevice,
         RemovePerson,
         ImportingAcsEventFromDevice,
-        ExportDataToDevice
+        ExportDataToDevice,
+        DeviceAction
     }
     public enum ProcessState
     {

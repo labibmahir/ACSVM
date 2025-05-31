@@ -4,6 +4,7 @@ using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20250530221619_Adding IsSync in BaseModel and Adding Tables for DeviceSyncing process and Logs")]
+    partial class AddingIsSyncinBaseModelandAddingTablesforDeviceSyncingprocessandLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -436,101 +439,6 @@ namespace Infrastructure.Migrations
                     b.ToTable("Devices");
                 });
 
-            modelBuilder.Entity("Domain.Entities.DeviceLog", b =>
-                {
-                    b.Property<Guid>("Oid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("DateCreated")
-                        .HasColumnType("smalldatetime");
-
-                    b.Property<DateTime?>("DateModified")
-                        .HasColumnType("smalldatetime");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DeviceResponse")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool?>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsSync")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("OrganizationId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("PersonId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("VisitorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Oid");
-
-                    b.HasIndex("DeviceId");
-
-                    b.HasIndex("PersonId");
-
-                    b.HasIndex("VisitorId");
-
-                    b.ToTable("DeviceLogs");
-                });
-
-            modelBuilder.Entity("Domain.Entities.DeviceSynchronizer", b =>
-                {
-                    b.Property<Guid>("Oid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("DateCreated")
-                        .HasColumnType("smalldatetime");
-
-                    b.Property<DateTime?>("DateModified")
-                        .HasColumnType("smalldatetime");
-
-                    b.Property<bool?>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsSync")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("OrganizationId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid?>("PersonId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("VisitorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Oid");
-
-                    b.HasIndex("PersonId");
-
-                    b.HasIndex("VisitorId");
-
-                    b.ToTable("DeviceSynchronizer");
-                });
-
             modelBuilder.Entity("Domain.Entities.FingerPrint", b =>
                 {
                     b.Property<Guid>("Oid")
@@ -717,52 +625,6 @@ namespace Infrastructure.Migrations
                     b.HasIndex("PersonId");
 
                     b.ToTable("IdentifiedAssignedAppointments");
-                });
-
-            modelBuilder.Entity("Domain.Entities.IdentifiedSyncDevice", b =>
-                {
-                    b.Property<Guid>("Oid")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<byte>("Action")
-                        .HasColumnType("tinyint");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("DateCreated")
-                        .HasColumnType("smalldatetime");
-
-                    b.Property<DateTime?>("DateModified")
-                        .HasColumnType("smalldatetime");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("DeviceSynchronizerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool?>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool?>("IsSync")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("OrganizationId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TryCount")
-                        .HasColumnType("int");
-
-                    b.HasKey("Oid");
-
-                    b.HasIndex("DeviceId");
-
-                    b.ToTable("IdentifiedSyncDevices");
                 });
 
             modelBuilder.Entity("Domain.Entities.Person", b =>
@@ -1079,44 +941,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("AccessLevel");
                 });
 
-            modelBuilder.Entity("Domain.Entities.DeviceLog", b =>
-                {
-                    b.HasOne("Domain.Entities.Device", "Device")
-                        .WithMany()
-                        .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Person", "Person")
-                        .WithMany()
-                        .HasForeignKey("PersonId");
-
-                    b.HasOne("Domain.Entities.Visitor", "Visitor")
-                        .WithMany()
-                        .HasForeignKey("VisitorId");
-
-                    b.Navigation("Device");
-
-                    b.Navigation("Person");
-
-                    b.Navigation("Visitor");
-                });
-
-            modelBuilder.Entity("Domain.Entities.DeviceSynchronizer", b =>
-                {
-                    b.HasOne("Domain.Entities.Person", "Person")
-                        .WithMany()
-                        .HasForeignKey("PersonId");
-
-                    b.HasOne("Domain.Entities.Visitor", "Visitor")
-                        .WithMany()
-                        .HasForeignKey("VisitorId");
-
-                    b.Navigation("Person");
-
-                    b.Navigation("Visitor");
-                });
-
             modelBuilder.Entity("Domain.Entities.FingerPrint", b =>
                 {
                     b.HasOne("Domain.Entities.Person", "Person")
@@ -1195,17 +1019,6 @@ namespace Infrastructure.Migrations
                     b.Navigation("Appointment");
 
                     b.Navigation("Person");
-                });
-
-            modelBuilder.Entity("Domain.Entities.IdentifiedSyncDevice", b =>
-                {
-                    b.HasOne("Domain.Entities.Device", "Device")
-                        .WithMany()
-                        .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Device");
                 });
 
             modelBuilder.Entity("Domain.Entities.PersonImage", b =>

@@ -36,4 +36,7 @@ public class DataContext : DbContext
     public DbSet<Attendance> Attendances { get; set; }
     public DbSet<ClientDBDetail> ClientDBDetails { get; set; }
     public DbSet<ClientFieldMapping> ClientFieldMappings { get; set; }
+    public DbSet<DeviceSynchronizer> DeviceSynchronizer { get; set; }
+    public DbSet<IdentifiedSyncDevice> IdentifiedSyncDevices { get; set; }
+    public DbSet<DeviceLog> DeviceLogs { get; set; }
 }
