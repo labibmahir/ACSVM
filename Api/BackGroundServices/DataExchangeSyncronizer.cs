@@ -352,7 +352,5 @@ namespace Api.BackGroundServices
                 return false;
             }
         }
-
-
     }
 }

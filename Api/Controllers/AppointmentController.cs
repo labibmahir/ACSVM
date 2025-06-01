@@ -461,85 +461,6 @@ namespace Api.Controllers
                 }
                 context.IdentifiedAssignedAppointmentRepository.AddRange(identifiedAssignedAppointments);
                 await context.SaveChangesAsync();
-                //#region addingImage To Device and Db
-                //if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
-                //{
-                //    byte[] imageBytes;
-
-                //    using (var memoryStream = new MemoryStream())
-                //    {
-                //        await appointmentDto.Image.CopyToAsync(memoryStream);
-                //        imageBytes = memoryStream.ToArray();
-                //    }
-
-                //    string base64Image = Convert.ToBase64String(imageBytes);
-
-                //    PersonImage personImage = new PersonImage()
-                //    {
-                //        CreatedBy = GetLoggedInUserId(),
-                //        DateCreated = DateTime.Now,
-                //        ImageBase64 = base64Image,
-                //        ImageData = imageBytes,
-                //        VisitorId = visitor.Oid,
-                //        Oid = Guid.NewGuid(),
-                //        IsDeleted = false,
-                //    };
-
-                //    FacePictureUploadDto vMPersonImageSetUpRequest = new FacePictureUploadDto()
-                //    {
-                //        faceLibType = "blackFD",
-                //        FDID = "1",
-                //        FPID = visitor.VisitorNumber
-                //    };
-
-                //    if (visitorToBeAddedInDevices.Count() > 0)
-                //    {
-                //        foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
-                //        {
-                //            var (IsSuccess, Message) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequest, imageBytes);
-
-
-                //            if (IsSuccess)
-                //            {
-                //                var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitor.Oid);
-                //                if (personImageInserted == null)
-                //                {
-                //                    context.PersonImageRepository.Add(personImage);
-                //                    await context.SaveChangesAsync();
-                //                }
-                //            }
-
-                //        }
-                //    }
-                //    if (visitorToBeUpdateInDevices.Count() > 0)
-                //    {
-                //        foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
-                //        {
-                //            var (IsSuccess, Message) = await _visionMachineService.DeleteFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, new FacePictureRemoveDto
-                //            {
-                //                faceLibType = "blackFD",
-                //                FDID = "1",
-                //                FPID = visitor.VisitorNumber,
-                //                deleteFP = true
-                //            }, imageBytes);
-
-                //            if (IsSuccess)
-                //            {
-                //                FacePictureUploadDto vMPersonImageSetUpRequestUpdate = new FacePictureUploadDto()
-                //                {
-                //                    faceLibType = "blackFD",
-                //                    FDID = "1",
-                //                    FPID = visitor.VisitorNumber
-                //                };
-
-                //                var (IsSuccessUpload, MessageUpload) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequestUpdate, imageBytes);
-
-                //            }
-
-
-                //        }
-                //    }
-                //}
                 //#endregion
                 IProcess importPeople = new DeviceActionProcess(deviceSynchronizer, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
@@ -676,7 +597,6 @@ namespace Api.Controllers
         /// <returns>Http status code: NoContent.</returns>
         [HttpPut]
         [Route(RouteConstants.UpdateAppointment)]
-        // [Consumes("multipart/form-data")]
         public async Task<IActionResult> UpdateAppointment(Guid key, AppointmentDto appointmentDto)
         {
             try
@@ -725,15 +645,6 @@ namespace Api.Controllers
 
                     visitorCard = card;
                 }
-                //if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
-                //{
-                //    var allowedImageTypes = new[] { "image/jpeg", "image/png" };
-
-                //    if (!allowedImageTypes.Contains(appointmentDto.Image.ContentType.ToLower()))
-                //    {
-                //        return BadRequest("Only image files (JPEG, PNG) are allowed.");
-                //    }
-                //}
                 var devices = new List<Device>();
                 if (appointmentDto.AccessLevelList.Length > 0)
                 {
@@ -754,15 +665,7 @@ namespace Api.Controllers
 
                 if (devices.Count() <= 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
-
-                //foreach (var device in devices)
-                //{
-                //    if (!await IsDeviceActive(device.DeviceIP))
-                //    {
-                //        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
-
-                //    }
-                //}
+                
 
                 appointmentInDb.IsCompleted = false;
                 appointmentInDb.IsDeleted = false;
@@ -893,73 +796,7 @@ namespace Api.Controllers
 
 
                 List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
-
-                //VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
-                //{
-                //    doorNo = 1,
-                //    planTemplateNo = "1",
-                //};
-
-                //vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
-
-                //VMUserInfo vMUserInfo = new VMUserInfo()
-                //{
-                //    employeeNo = visitorInDb.VisitorNumber,
-                //    deleteUser = false,
-                //    name = visitorInDb.FirstName + " " + visitorInDb.Surname,
-                //    userType = "normal",
-                //    closeDelayEnabled = true,
-                //    Valid = new VMEffectivePeriod()
-                //    {
-                //        enable = true,
-                //        beginTime = visitorInDb.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                //        endTime = visitorInDb.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                //        timeType = "local"
-                //    },
-                //    doorRight = "1",
-                //    RightPlan = vMDoorPermissionSchedules,
-                //    localUIRight = false,
-                //    callNumbers = new List<string> { " 1-1-1-401" },
-                //    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
-                //    userVerifyMode = visitorInDb.UserVerifyMode switch
-                //    {
-                //        Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
-                //        Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
-                //        Enums.UserVerifyMode.card => "card",
-                //        _ => "faceAndFpAndCard"//this is default
-                //    },
-                //    gender = visitorInDb.Gender switch
-                //    {
-                //        Enums.Gender.Male => "male",
-                //        Enums.Gender.Female => "female",
-                //        _ => "other"
-                //    }
-                //};
-                //if (visitorToBeAddedInDevices.Count() > 0)
-                //{
-                //    //foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
-                //    //{
-                //    //    var vService = await _visionMachineService.AddUser(device, vMUserInfo);
-                //    //    var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
-                //    //    if (res.StatusCode != 1)
-                //    //    {
-                //    //        return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                //    //    }
-                //    //}
-                //}
-                //if (visitorToBeUpdateInDevices.Count() > 0)
-                //{
-                //    //foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
-                //    //{
-                //    //    var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
-                //    //    var updated = await _visionMachineService.UpdateUser(device, vMUserInfo);
-                //    //    var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(updated);
-                //    //    if (res.StatusCode != 1)
-                //    //    {
-                //    //        return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                //    //    }
-                //    //}
-                //}
+                
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                 await context.SaveChangesAsync();
 
@@ -1032,124 +869,7 @@ namespace Api.Controllers
                 context.IdentifiedSyncDeviceRepository.AddRange(identifiedSyncDevices);
                 await context.SaveChangesAsync();
                 #endregion
-                //#region addingImage To Device and Db
-                //if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
-                //{
-                //    byte[] imageBytes;
-
-                //    using (var memoryStream = new MemoryStream())
-                //    {
-                //        await appointmentDto.Image.CopyToAsync(memoryStream);
-                //        imageBytes = memoryStream.ToArray();
-                //    }
-
-                //    string base64Image = Convert.ToBase64String(imageBytes);
-
-                //    var personImage = await context.PersonImageRepository.GetImageByVisitorId(visitorInDb.Oid);
-
-                //    if (personImage == null)
-                //    {
-                //        personImage = new PersonImage()
-                //        {
-                //            CreatedBy = GetLoggedInUserId(),
-                //            DateCreated = DateTime.Now,
-                //            ImageBase64 = base64Image,
-                //            ImageData = imageBytes,
-                //            VisitorId = visitorInDb.Oid,
-                //            Oid = Guid.NewGuid(),
-                //            IsDeleted = false,
-                //        };
-                //    }
-
-
-
-
-                //    FacePictureUploadDto vMPersonImageSetUpRequest = new FacePictureUploadDto()
-                //    {
-                //        faceLibType = "blackFD",
-                //        FDID = "1",
-                //        FPID = visitorInDb.VisitorNumber
-                //    };
-
-                //    if (visitorToBeAddedInDevices.Count() > 0)
-                //    {
-                //        foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
-                //        {
-                //            var (IsSuccess, Message) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequest, imageBytes);
-
-
-                //            if (IsSuccess)
-                //            {
-                //                var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitorInDb.Oid);
-                //                if (personImageInserted == null)
-                //                {
-                //                    context.PersonImageRepository.Add(personImage);
-                //                    await context.SaveChangesAsync();
-                //                }
-                //                else
-                //                {
-                //                    personImageInserted.ModifiedBy = GetLoggedInUserId();
-                //                    personImageInserted.DateModified = DateTime.Now;
-                //                    personImageInserted.ImageBase64 = base64Image;
-                //                    personImageInserted.ImageData = imageBytes;
-                //                    personImageInserted.IsDeleted = false;
-
-                //                    context.PersonImageRepository.Update(personImage);
-                //                    await context.SaveChangesAsync();
-                //                }
-                //            }
-
-                //        }
-                //    }
-                //    if (visitorToBeUpdateInDevices.Count() > 0)
-                //    {
-                //        foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
-                //        {
-                //            var (IsSuccess, Message) = await _visionMachineService.DeleteFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, new FacePictureRemoveDto
-                //            {
-                //                faceLibType = "blackFD",
-                //                FDID = "1",
-                //                FPID = visitorInDb.VisitorNumber,
-                //                deleteFP = true
-                //            }, imageBytes);
-
-                //            if (IsSuccess)
-                //            {
-                //                FacePictureUploadDto vMPersonImageSetUpRequestUpdate = new FacePictureUploadDto()
-                //                {
-                //                    faceLibType = "blackFD",
-                //                    FDID = "1",
-                //                    FPID = visitorInDb.VisitorNumber
-                //                };
-
-                //                var (IsSuccessUpload, MessageUpload) = await _visionMachineService.PostFaceRecordToLibrary(device.DeviceIP, Convert.ToInt16(device.Port), device.Username, device.Password, vMPersonImageSetUpRequestUpdate, imageBytes);
-                //                if (IsSuccessUpload)
-                //                {
-                //                    var personImageInserted = await context.PersonImageRepository.GetImageByVisitorId(visitorInDb.Oid);
-                //                    if (personImageInserted == null)
-                //                    {
-                //                        context.PersonImageRepository.Add(personImage);
-                //                        await context.SaveChangesAsync();
-                //                    }
-                //                    else
-                //                    {
-                //                        personImageInserted.ModifiedBy = GetLoggedInUserId();
-                //                        personImageInserted.DateModified = DateTime.Now;
-                //                        personImageInserted.ImageBase64 = base64Image;
-                //                        personImageInserted.ImageData = imageBytes;
-                //                        personImageInserted.IsDeleted = false;
-
-                //                        context.PersonImageRepository.Update(personImage);
-                //                        await context.SaveChangesAsync();
-                //                    }
-                //                }
-                //            }
-
-
-                //        }
-                //    }
-                //}
-                //#endregion
+              
                 IProcess importPeople = new DeviceActionProcess(deviceSynchronizer, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
 

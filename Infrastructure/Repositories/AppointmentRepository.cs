@@ -155,7 +155,7 @@ namespace Infrastructure.Repositories
                         }).Distinct().ToList();
                     }
                 }
-                return result;
+                return result.OrderByDescending(x => x.AppointmentDate);
             }
             catch
             {
@@ -264,6 +264,8 @@ namespace Infrastructure.Repositories
                 {
                     Oid = x.Oid,
                     Address = x.Vistor.Address,
+                    Firstname = x.Vistor.FirstName,
+                    Surname = x.Vistor.Surname,
                     FullName = x.Vistor.FirstName + " " + x.Vistor.Surname,
                     IsCancelled = x.IsCancelled,
                     AppointmentDate = x.AppointmentDate,
@@ -282,7 +284,6 @@ namespace Infrastructure.Repositories
                     VisitorNumber = x.Vistor.VisitorNumber,
                     VisitorId = x.VisitorId,
                     VisitorImageBase64 = x.Vistor.PersonImages.Where(x => x.IsDeleted == false).FirstOrDefault() == null ? "" : x.Vistor.PersonImages.Where(x => x.IsDeleted == false).FirstOrDefault().ImageBase64,
-                    //AssignedDevicesIdToVisitor = x.Vistor.IdentifiedAssignDevices.Select(d => d.Device.Oid).ToList(),
                     AssignedDevicesToVisitor = x.Vistor.IdentifiedAssignDevices.Select(d => d.Device).ToList(),
 
                 }).FirstOrDefaultAsync();

@@ -211,7 +211,7 @@ namespace Infrastructure.Repositories
 
                 if (!string.IsNullOrEmpty(personNoAndPernameNameFilterDto.search))
                     query = query.Where(x => x.FirstName.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) || x.Surname.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim())
-                    || x.PersonNumber.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) ||
+                    || x.PersonNumber.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) || (x.FirstName + " " + x.Surname).ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim()) ||
                     (x.PhoneNumber.ToLower().Contains(personNoAndPernameNameFilterDto.search.ToLower().Trim())) || (x.Email.ToLower().Contains(personNoAndPernameNameFilterDto.search))
                        );
 
