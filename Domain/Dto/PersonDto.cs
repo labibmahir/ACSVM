@@ -30,7 +30,7 @@ namespace Domain.Dto
         
         public string Department { get; set; }
 
-        [MaxLength(20)]
+        [MaxLength(50)]
         public string Email { get; set; }
 
         [MaxLength(15)]
