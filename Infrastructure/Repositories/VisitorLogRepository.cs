@@ -110,5 +110,21 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+        public async Task<IEnumerable<VisitorLog>> GetVisitorAttendancesBetweenDates(DateTime StartDate, DateTime EndDate)
+        {
+            try
+            {
+                var query = context.VisitorLogs.Include(v => v.Visitor).Include(d => d.Device).Where(x => x.IsDeleted == false
+              && (x.AuthenticationDate.HasValue && x.AuthenticationDate.Value.Date >= StartDate.Date && x.AuthenticationDate.Value.Date <= EndDate.Date)
+              ).AsQueryable();
+
+                return await query.ToListAsync();
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
     }
 }

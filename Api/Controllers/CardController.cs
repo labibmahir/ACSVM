@@ -49,12 +49,19 @@ namespace Api.Controllers
                 if (cardWithSameCardNumber != null)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardNumberTake);
 
+
+                var cardWithSameCardName = await context.CardRepository.GetCardByCardName(cardDto.CardName);
+
+                if (cardWithSameCardName != null)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardNameTake);
+
                 Card card = new Card();
 
                 card.DateCreated = DateTime.Now;
                 card.IsDeleted = false;
                 card.CreatedBy = GetLoggedInUserId();
                 card.CardNumber = cardDto.CardNumber;
+                card.CardName = cardDto.CardName;
                 card.Status = Enums.Status.Inactive;
 
                 context.CardRepository.Add(card);
@@ -477,6 +484,10 @@ namespace Api.Controllers
                 if (cardWithSameCardNumber != null && cardWithSameCardNumber.OrganizationId == cardWithSameCardNumber.OrganizationId && cardWithSameCardNumber.Oid != cardDto.Oid)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardNumberTake);
 
+                var cardWithSameCardName = await context.CardRepository.GetCardByCardName(cardDto.CardName);
+
+                if (cardWithSameCardName != null && cardWithSameCardName.Oid != cardDto.Oid)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardNameTake);
 
                 var cardInDb = await context.CardRepository.GetCardByKey(cardDto.Oid);
 

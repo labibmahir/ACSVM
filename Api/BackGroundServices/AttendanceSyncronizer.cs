@@ -57,8 +57,8 @@ namespace Api.BackGroundServices
                         #region ACSEvent
 
                         // Processing ACS Event Data
-                        DateTime startTime = DateTime.Now.AddMinutes(-3);
-                        DateTime endTime = startTime.AddMinutes(1);
+                        DateTime startTime = DateTime.Now.AddHours(-48);
+                        DateTime endTime = DateTime.Now;// startTime.AddMinutes(1);
 
                         while (startTime.TimeOfDay < DateTime.Now.TimeOfDay) // Continue until today
                         {
@@ -116,7 +116,11 @@ namespace Api.BackGroundServices
                                                 Attendance recentAttendance = null; ;
                                                 if (getPersonByPersonNumber != null)
                                                 {
-                                                    recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByPersonNumber(oneMinuteAgo, now, getPersonByPersonNumber.PersonNumber);
+                                                //    recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByPersonNumber(oneMinuteAgo, now, getPersonByPersonNumber.PersonNumber);
+                                                    recentAttendance = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
+                                      && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
+                                      );
+
                                                     //else if (getVisitorByPersonNumber != null)
                                                     //            recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByVisitorNumber(oneMinuteAgo, now, getVisitorByPersonNumber.VisitorNumber);
 
@@ -161,7 +165,8 @@ namespace Api.BackGroundServices
                                                                 AuthenticationDate = item.EventTime.DateTime,
                                                                 AuthenticationTime = item.EventTime.TimeOfDay,
                                                                 DeviceId = device.Oid,
-                                                                DateCreated = DateTime.Now
+                                                                DateCreated = DateTime.Now,
+                                                                IsDeleted=false
 
                                                             };
                                                             var added = context.AttendanceRepository.Add(accessControllEvent);
@@ -181,7 +186,7 @@ namespace Api.BackGroundServices
                                                         await _attendanceAggrigator.SendAppointmentNotification(getVisitorByVisitorNumber, assignAppointment.Select(x => x.PersonId).ToList());
 
                                                     }
-                                                    var visitorLogInDb = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
+                                                    var visitorLogInDb = await context.VisitorLogRepository.FirstOrDefaultAsync(x => x.VisitorId == getVisitorByVisitorNumber.Oid
                                                     && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
                                                     );
 
@@ -196,7 +201,9 @@ namespace Api.BackGroundServices
                                                             AuthenticationDate = item.EventTime.DateTime,
                                                             AuthenticationTime = item.EventTime.TimeOfDay,
                                                             DeviceId = device.Oid,
-                                                            DateCreated = DateTime.Now
+                                                            DateCreated = DateTime.Now,
+                                                            IsDeleted = false,
+
 
                                                         };
 
@@ -217,8 +224,8 @@ namespace Api.BackGroundServices
                                     // WriteLogToFile($"Exception  : {ex.Message}");
                                 }
                                 // Move to the next day
-                                startTime = startTime.AddDays(1);
-                                endTime = startTime.AddDays(1);
+                                //startTime = startTime.AddDays(1);
+                                //endTime = startTime.AddDays(1);
 
 
 

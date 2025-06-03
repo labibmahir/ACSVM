@@ -109,5 +109,17 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+        public async Task<Card> GetCardByCardName(string cardName)
+        {
+            try
+            {
+                return await FirstOrDefaultAsync(x => x.IsDeleted == false && x.CardName.ToLower() == cardName.ToLower().Trim());
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
     }
 }

@@ -38,5 +38,6 @@ namespace Infrastructure.Contracts
         /// <param name="cardNumber">deviceName of a user.</param>
         /// <returns>Returns a Card if the cardNumber is matched.
         public Task<Card> GetCardByCardNumber(string cardNumber);
+        public Task<Card> GetCardByCardName(string cardName);
     }
 }

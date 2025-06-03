@@ -62,7 +62,7 @@ namespace Api.Controllers
                     var devicelist = await context.DeviceRepository.GetDevicesByAccessLevels(personDto.AccessLevelIds);
                     devices = devicelist.ToList();
                 }
-                else
+                if (personDto.DeviceIdList != null && personDto.DeviceIdList.Count() > 0)
                 {
                     var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(personDto.DeviceIdList);
                     devices = devicelist.ToList();
@@ -82,7 +82,7 @@ namespace Api.Controllers
                     FirstName = personDto.FirstName,
                     Gender = personDto.Gender,
                     OrganizationId = personDto.OrganizationId,
-                    PersonNumber = GeneratePersonNo(),
+                    PersonNumber = personDto.PersonNumber,//GeneratePersonNo(),
                     PhoneNumber = personDto.PhoneNumber,
                     Surname = personDto.Surname,
                     IsDeviceAdministrator = personDto.IsDeviceAdministrator,

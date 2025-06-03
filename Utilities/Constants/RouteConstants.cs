@@ -181,6 +181,8 @@ namespace Utilities.Constants
         public const string ReadVisitorAttendances = "visitor-attendances";
 
         public const string ReadAttendanceByVisitorId = "attendance/visitor/{visitorId}";
+        public const string DeletePersonAttendance = "attendance/person/delete";
+        public const string DeleteVisitorAttendance = "attendance/visitor/delete";
         #endregion
     }
 }

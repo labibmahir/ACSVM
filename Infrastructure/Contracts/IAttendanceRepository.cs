@@ -19,5 +19,6 @@ namespace Infrastructure.Contracts
         public Task<IEnumerable<Attendance>> GetAttendanceByPersonId(Guid personId);
         public Task<IEnumerable<Attendance>> GetPersonAttendances(PersonAttendanceFilterDto personAttendanceFilterDto);
         public Task<int> GetPersonAttendancesCount(PersonAttendanceFilterDto personAttendanceFilterDto);
+        public Task<IEnumerable<Attendance>> GetPersonAttendancesBetweenDates(DateTime StartDate,DateTime EndDate);
     }
 }
