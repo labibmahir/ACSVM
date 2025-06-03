@@ -39,4 +39,5 @@ public class DataContext : DbContext
     public DbSet<DeviceSynchronizer> DeviceSynchronizer { get; set; }
     public DbSet<IdentifiedSyncDevice> IdentifiedSyncDevices { get; set; }
     public DbSet<DeviceLog> DeviceLogs { get; set; }
+    public DbSet<VisitorLog> VisitorLogs { get; set; }
 }

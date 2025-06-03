@@ -665,7 +665,7 @@ namespace Api.Controllers
 
                 if (devices.Count() <= 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
-                
+
 
                 appointmentInDb.IsCompleted = false;
                 appointmentInDb.IsDeleted = false;
@@ -796,7 +796,7 @@ namespace Api.Controllers
 
 
                 List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
-                
+
                 context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                 await context.SaveChangesAsync();
 
@@ -869,9 +869,181 @@ namespace Api.Controllers
                 context.IdentifiedSyncDeviceRepository.AddRange(identifiedSyncDevices);
                 await context.SaveChangesAsync();
                 #endregion
-              
+
                 IProcess importPeople = new DeviceActionProcess(deviceSynchronizer, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+
+        /// <summary>
+        /// URL: api/complete-appointment/{key}
+        /// </summary>
+        /// <param name="key">Primary key of the table appointment.</param> 
+        /// <returns>Http status code: NoContent.</returns>
+        [HttpPut]
+        [Route(RouteConstants.CompleteAppointment)]
+        public async Task<IActionResult> CompleteAppointment(Guid key)
+        {
+            try
+            {
+                if (key == Guid.Empty)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
+
+
+                var appointmentInDb = await context.AppointmentRepository.GetAppointmentByKey(key);
+                if (appointmentInDb == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                var visitorInDb = await context.VisitorRepository.GetVisitorByKey(appointmentInDb.VisitorId);
+                if (visitorInDb == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+
+                var identifiedCardAssign = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByVisitor(appointmentInDb.VisitorId);
+
+                Card visitorCard = new Card();
+                if (identifiedCardAssign != null)
+                {
+
+                    identifiedCardAssign.IsDeleted = true;
+                    context.IdentifiedAssignCardRepository.Update(identifiedCardAssign);
+
+
+                    if (identifiedCardAssign.Card != null)
+                    {
+                        visitorCard = identifiedCardAssign.Card;
+                        visitorCard.Status = Status.Inactive;
+                        context.CardRepository.Update(visitorCard);
+                    }
+
+
+                    var assignedDevices = await context.IdentifiedAssignDeviceRepository.QueryAsync(x => x.IsDeleted == false && x.VisitorId == visitorInDb.Oid);
+
+                    VMCardInfoDeleteRequest vMCardInfoDeleteRequest = new VMCardInfoDeleteRequest()
+                    {
+                        CardNoList = new List<VMCardNoListItem?>() { new VMCardNoListItem() { cardNo = visitorCard.CardNumber } }
+                    };
+
+                    foreach (var item in assignedDevices)
+                    {
+                        var result = await _visionMachineService.DeleteCard(item.Device, vMCardInfoDeleteRequest);
+
+                        if (!result.Success)
+                        {
+
+                        }
+                    }
+                    await context.SaveChangesAsync();
+
+                }
+
+                var devices = new List<Device>();
+
+
+                if (devices.Count() <= 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
+
+
+                appointmentInDb.IsCompleted = true;
+                appointmentInDb.IsCancelled = false;
+                appointmentInDb.IsDeleted = false;
+                appointmentInDb.DateCreated = DateTime.Now;
+                appointmentInDb.CreatedBy = GetLoggedInUserId();
+
+                context.AppointmentRepository.Update(appointmentInDb);
+                await context.SaveChangesAsync();
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+        /// <summary>
+        /// URL: api/cancel-appointment/{key}
+        /// </summary>
+        /// <param name="key">Primary key of the table appointment.</param> 
+        /// <returns>Http status code: NoContent.</returns>
+        [HttpPut]
+        [Route(RouteConstants.CancelAppointment)]
+        public async Task<IActionResult> CancelAppointment(Guid key)
+        {
+            try
+            {
+                if (key == Guid.Empty)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.UnauthorizedAttemptOfRecordUpdateError);
+
+
+                var appointmentInDb = await context.AppointmentRepository.GetAppointmentByKey(key);
+                if (appointmentInDb == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                var visitorInDb = await context.VisitorRepository.GetVisitorByKey(appointmentInDb.VisitorId);
+                if (visitorInDb == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+
+                var identifiedCardAssign = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByVisitor(appointmentInDb.VisitorId);
+
+                Card visitorCard = new Card();
+                if (identifiedCardAssign != null)
+                {
+
+                    identifiedCardAssign.IsDeleted = true;
+                    context.IdentifiedAssignCardRepository.Update(identifiedCardAssign);
+
+
+                    if (identifiedCardAssign.Card != null)
+                    {
+                        visitorCard = identifiedCardAssign.Card;
+                        visitorCard.Status = Status.Inactive;
+                        context.CardRepository.Update(visitorCard);
+                    }
+
+
+                    var assignedDevices = await context.IdentifiedAssignDeviceRepository.QueryAsync(x => x.IsDeleted == false && x.VisitorId == visitorInDb.Oid);
+
+                    VMCardInfoDeleteRequest vMCardInfoDeleteRequest = new VMCardInfoDeleteRequest()
+                    {
+                        CardNoList = new List<VMCardNoListItem?>() { new VMCardNoListItem() { cardNo = visitorCard.CardNumber } }
+                    };
+
+                    foreach (var item in assignedDevices)
+                    {
+                        var result = await _visionMachineService.DeleteCard(item.Device, vMCardInfoDeleteRequest);
+
+                        if (!result.Success)
+                        {
+
+                        }
+                    }
+                    await context.SaveChangesAsync();
+
+                }
+
+                var devices = new List<Device>();
+
+
+                if (devices.Count() <= 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
+
+
+                appointmentInDb.IsCompleted = false;
+                appointmentInDb.IsCancelled = true;
+                appointmentInDb.IsDeleted = false;
+                appointmentInDb.DateCreated = DateTime.Now;
+                appointmentInDb.CreatedBy = GetLoggedInUserId();
+
+                context.AppointmentRepository.Update(appointmentInDb);
+                await context.SaveChangesAsync();
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }

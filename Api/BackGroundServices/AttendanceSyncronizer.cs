@@ -57,10 +57,10 @@ namespace Api.BackGroundServices
                         #region ACSEvent
 
                         // Processing ACS Event Data
-                        DateTime startTime = DateTime.Now.AddMinutes(-1);
+                        DateTime startTime = DateTime.Now.AddMinutes(-3);
                         DateTime endTime = startTime.AddMinutes(1);
 
-                        while (startTime < DateTime.Now) // Continue until today
+                        while (startTime.TimeOfDay < DateTime.Now.TimeOfDay) // Continue until today
                         {
                             try
                             {
@@ -146,11 +146,52 @@ namespace Api.BackGroundServices
                                                         alarmInfo.Device = device;
                                                         await _attendanceAggrigator.SendAccessControllEventNotification(alarmInfo);
 
-                                                        Attendance accessControllEvent = new Attendance()
+                                                        var accessControllEventInDb = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
+                                                        && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
+                                                        );
+
+                                                        if (accessControllEventInDb == null)
+                                                        {
+                                                            Attendance accessControllEvent = new Attendance()
+                                                            {
+                                                                CardNo = item.CardReaderNo.ToString(),
+                                                                // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
+                                                                PersonId = getPersonByPersonNumber.Oid,
+                                                                AuthenticationDateAndTime = item.EventTime.DateTime,
+                                                                AuthenticationDate = item.EventTime.DateTime,
+                                                                AuthenticationTime = item.EventTime.TimeOfDay,
+                                                                DeviceId = device.Oid,
+                                                                DateCreated = DateTime.Now
+
+                                                            };
+                                                            var added = context.AttendanceRepository.Add(accessControllEvent);
+
+                                                            await context.SaveChangesAsync();
+                                                        }
+                                                    }
+                                                }
+                                                else if (getVisitorByVisitorNumber != null)
+                                                {
+                                                    var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(getVisitorByVisitorNumber.Oid, item.EventTime.DateTime, item.EventTime.TimeOfDay);
+
+                                                    if (checkAppointment != null)
+                                                    {
+
+                                                        var assignAppointment = await context.IdentifiedAssignedAppointmentRepository.GetIdentifiedAssignedAppointmentByAppointment(checkAppointment.Oid);
+                                                        await _attendanceAggrigator.SendAppointmentNotification(getVisitorByVisitorNumber, assignAppointment.Select(x => x.PersonId).ToList());
+
+                                                    }
+                                                    var visitorLogInDb = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
+                                                    && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
+                                                    );
+
+                                                    if (visitorLogInDb == null)
+                                                    {
+                                                        VisitorLog visitorLog = new VisitorLog()
                                                         {
                                                             CardNo = item.CardReaderNo.ToString(),
                                                             // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
-                                                            PersonId = getPersonByPersonNumber.Oid,
+                                                            VisitorId = getVisitorByVisitorNumber.Oid,
                                                             AuthenticationDateAndTime = item.EventTime.DateTime,
                                                             AuthenticationDate = item.EventTime.DateTime,
                                                             AuthenticationTime = item.EventTime.TimeOfDay,
@@ -158,19 +199,9 @@ namespace Api.BackGroundServices
                                                             DateCreated = DateTime.Now
 
                                                         };
-                                                        var added = context.AttendanceRepository.Add(accessControllEvent);
 
+                                                        context.VisitorLogRepository.Add(visitorLog);
                                                         await context.SaveChangesAsync();
-                                                    }
-                                                }
-                                                else if (getVisitorByVisitorNumber != null)
-                                                {
-                                                    var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(getVisitorByVisitorNumber.Oid, item.EventTime.DateTime, item.EventTime.TimeOfDay);
-                                                    if (checkAppointment != null)
-                                                    {
-                                                        var assignAppointment = await context.IdentifiedAssignedAppointmentRepository.GetIdentifiedAssignedAppointmentByAppointment(checkAppointment.Oid);
-                                                        await _attendanceAggrigator.SendAppointmentNotification(getVisitorByVisitorNumber, assignAppointment.Select(x => x.PersonId).ToList());
-
                                                     }
                                                 }
                                             }

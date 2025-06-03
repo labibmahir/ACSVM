@@ -148,6 +148,59 @@ namespace Api.Controllers
             }
         }
 
+        /// <summary>
+        /// URL:api/user-accounts
+        /// </summary>
+        /// <returns>A list of user accounts.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadUserAccountAdvanceFilteration)]
+        [Authorize]
+        public async Task<IActionResult> ReadUserAccountAdvanceFilteration([FromQuery] UserAccountAdvanceFilterDto userAccountAdvanceFilter)
+        {
+            try
+            {
+                if (userAccountAdvanceFilter.PageSize == 0)
+                {
+                    var users = await context.UserAccountRepository.GetUserAccounts(userAccountAdvanceFilter);
+                    int currentPage = userAccountAdvanceFilter.Page;
+
+                    PagedResultDto<UserAccount> userAccountDto = new PagedResultDto<UserAccount>()
+                    {
+                        Data = users.ToList(),
+                        PageNumber = 0,
+                        PageSize = 0,
+                        TotalItems = await context.UserAccountRepository.GetUserAccountsCount(userAccountAdvanceFilter)
+                    };
+                    userAccountDto.TotalPages = (int)Math.Ceiling((double)userAccountDto.TotalItems / userAccountAdvanceFilter.PageSize);
+
+                    return Ok(userAccountDto);
+                }
+                else
+                {
+                    int currentPage = userAccountAdvanceFilter.Page;
+                    userAccountAdvanceFilter.Page = ((userAccountAdvanceFilter.Page - 1) * (userAccountAdvanceFilter.PageSize));
+
+                    var users = await context.UserAccountRepository.GetUserAccounts(userAccountAdvanceFilter);
+                    PagedResultDto<UserAccount> userAccountDto = new PagedResultDto<UserAccount>()
+                    {
+                        Data = users.ToList(),
+                        PageNumber = currentPage,
+                        PageSize = userAccountAdvanceFilter.PageSize,
+                        TotalItems = await context.UserAccountRepository.GetUserAccountsCount(userAccountAdvanceFilter)
+                    };
+
+                    userAccountDto.TotalPages = (int)Math.Ceiling((double)userAccountDto.TotalItems / userAccountAdvanceFilter.PageSize);
+
+                    return Ok(userAccountDto);
+
+                }
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
 
         /// <summary>
         /// URL: api/user-account/{key}

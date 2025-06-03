@@ -15,6 +15,7 @@ namespace Utilities.Constants
         public const string CreateUserAccount = "user-account";
 
         public const string ReadUserAccounts = "user-accounts";
+        public const string ReadUserAccountAdvanceFilteration = "user-accounts-advance-filteration";
 
         public const string ReadUserAccountByKey = "user-account/key/{key}";
 
@@ -153,6 +154,8 @@ namespace Utilities.Constants
         public const string ReadAppointmentByKey = "appointment/key/{key}";
 
         public const string UpdateAppointment = "appointment/{key}";
+        public const string CancelAppointment = "appointment-cancel/{key}";
+        public const string CompleteAppointment = "appointment-complete/{key}";
 
         public const string DeleteAppointment = "appointment/{key}";
         #endregion
@@ -167,6 +170,17 @@ namespace Utilities.Constants
         public const string UpdateClientDBDetail = "clientdbdetail/{key}";
 
         public const string DeleteClientDBDetail = "clientdbdetail/{key}";
+        #endregion
+
+        #region Attendance
+
+        public const string ReadPersonAttendances = "person-attendances";
+
+        public const string ReadAttendanceByPersonId = "attendance/person/{personId}";
+
+        public const string ReadVisitorAttendances = "visitor-attendances";
+
+        public const string ReadAttendanceByVisitorId = "attendance/visitor/{visitorId}";
         #endregion
     }
 }

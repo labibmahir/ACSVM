@@ -285,6 +285,20 @@ namespace Infrastructure
         }
         #endregion DeviceLogRepository
 
+        #region VisitorLogRepository
+        private IVisitorLogRepository visitorLogRepository;
+        public IVisitorLogRepository VisitorLogRepository
+        {
+            get
+            {
+                if (visitorLogRepository == null)
+                    visitorLogRepository = new VisitorLogRepository(context);
+
+                return visitorLogRepository;
+            }
+        }
+        #endregion VisitorLogRepository
+
         #region Entity LifeSpan
         public IDbContextTransaction BeginTransaction()
         {

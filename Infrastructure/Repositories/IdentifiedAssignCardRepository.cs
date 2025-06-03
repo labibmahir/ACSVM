@@ -31,7 +31,7 @@ namespace Infrastructure.Repositories
         {
             try
             {
-                return await context.IdentifiedAssignCards.AsNoTracking().Include(c => c.Card).Where(x => x.VisitorId == VisitorId).FirstOrDefaultAsync();
+                return await context.IdentifiedAssignCards.AsNoTracking().Include(c => c.Card).Where(x => x.VisitorId == VisitorId && x.IsDeleted == false).FirstOrDefaultAsync();
             }
             catch
             {

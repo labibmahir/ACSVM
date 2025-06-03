@@ -185,7 +185,6 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
-
         public async Task<int> GetUserAccountsCount(UserAccountFilterDto userAccountFilterDto)
         {
             try
@@ -220,6 +219,142 @@ namespace Infrastructure.Repositories
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
+            }
+        }
+        public async Task<IEnumerable<UserAccount>> GetUserAccounts(UserAccountAdvanceFilterDto userAccountAdvanceFilter)
+        {
+            try
+            {
+                var query = context.UserAccounts.Where(i => i.IsDeleted == false).AsQueryable();
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.search))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                    || x.Email.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                    || x.CellPhone.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                       );
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.FullName))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()));
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.Email))
+                    query = query.Where(x => x.Email.ToLower() == userAccountAdvanceFilter.Email.ToLower().Trim());
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.CellPhoneAndCountryCode))
+                    query = query.Where(x => userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CountryCode + x.CellPhone.ToLower())
+                    || userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CellPhone)
+                    );
+
+                if (userAccountAdvanceFilter.RoleId.HasValue && userAccountAdvanceFilter.RoleId != 0)
+                    query = query.Where(x => x.RoleId == userAccountAdvanceFilter.RoleId.Value);
+
+
+                if (userAccountAdvanceFilter.orderBy.ToLower().Trim() == "desc")
+                    query = query.OrderByDescending(d => d.DateCreated);
+                else
+                    query = query.OrderBy(d => d.DateCreated);
+
+                var result = await query.Skip(userAccountAdvanceFilter.Page).Take(userAccountAdvanceFilter.PageSize)
+                  .ToListAsync();
+
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+        public async Task<int> GetUserAccountsCount(UserAccountAdvanceFilterDto userAccountAdvanceFilter)
+        {
+            try
+            {
+                var query = context.UserAccounts.Where(i => i.IsDeleted == false).AsQueryable();
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.search))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                    || x.Email.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                    || x.CellPhone.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                       );
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.FullName))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()));
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.Email))
+                    query = query.Where(x => x.Email.ToLower() == userAccountAdvanceFilter.Email.ToLower().Trim());
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.CellPhoneAndCountryCode))
+                    query = query.Where(x => userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CountryCode + x.CellPhone.ToLower())
+                    || userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CellPhone)
+                    );
+
+                if (userAccountAdvanceFilter.RoleId.HasValue && userAccountAdvanceFilter.RoleId != 0)
+                    query = query.Where(x => x.RoleId == userAccountAdvanceFilter.RoleId.Value);
+
+
+                if (userAccountAdvanceFilter.orderBy.ToLower().Trim() == "desc")
+                    query = query.OrderByDescending(d => d.DateCreated);
+                else
+                    query = query.OrderBy(d => d.DateCreated);
+
+                var result = await query
+                  .CountAsync();
+
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+        }
+        public async Task<IEnumerable<UserAccount>> GetUserAccountsWithOutPagging(UserAccountAdvanceFilterDto userAccountAdvanceFilter)
+        {
+            try
+            {
+                var query = context.UserAccounts.Where(i => i.IsDeleted == false).AsQueryable();
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.search))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                    || x.Email.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                    || x.CellPhone.ToLower().Contains(userAccountAdvanceFilter.search.ToLower().Trim())
+                       );
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.FullName))
+                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()));
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.Email))
+                    query = query.Where(x => x.Email.ToLower() == userAccountAdvanceFilter.Email.ToLower().Trim());
+
+
+                if (!string.IsNullOrEmpty(userAccountAdvanceFilter.CellPhoneAndCountryCode))
+                    query = query.Where(x => userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CountryCode + x.CellPhone.ToLower())
+                    || userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CellPhone)
+                    );
+
+                if (userAccountAdvanceFilter.RoleId.HasValue && userAccountAdvanceFilter.RoleId != 0)
+                    query = query.Where(x => x.RoleId == userAccountAdvanceFilter.RoleId.Value);
+
+
+                if (userAccountAdvanceFilter.orderBy.ToLower().Trim() == "desc")
+                    query = query.OrderByDescending(d => d.DateCreated);
+                else
+                    query = query.OrderBy(d => d.DateCreated);
+
+                var result = await query
+                  .ToListAsync();
+
+                return result;
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
 

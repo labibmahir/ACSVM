@@ -53,7 +53,7 @@ namespace Infrastructure.Contracts
         /// <param name="CountryCode">Cellphone number of a user.</param>
         /// <returns>Returns a user account if the cellphone number is matched.</returns>
         public Task<UserAccount> GetUserAccountByCellphoneNCountryCode(string cellphone, string CountryCode);
-  
+
 
         /// <summary>
         /// The method is used to get the list of user accounts.
@@ -61,7 +61,10 @@ namespace Infrastructure.Contracts
         /// <returns>Returns a list of all user accounts.</returns>
         public Task<IEnumerable<UserAccount>> GetUserAccounts();
         public Task<IEnumerable<UserAccount>> GetUserAccounts(UserAccountFilterDto userAccountFilterDto);
+        public Task<IEnumerable<UserAccount>> GetUserAccounts(UserAccountAdvanceFilterDto userAccountAdvanceFilter);
+        public Task<IEnumerable<UserAccount>> GetUserAccountsWithOutPagging(UserAccountAdvanceFilterDto userAccountAdvanceFilter);
         public Task<int> GetUserAccountsCount(UserAccountFilterDto userAccountFilterDto);
+        public Task<int> GetUserAccountsCount(UserAccountAdvanceFilterDto userAccountAdvanceFilter);
 
     }
 }

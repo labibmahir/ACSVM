@@ -187,7 +187,7 @@ namespace Infrastructure.Repositories
                 else
                     query = query.OrderBy(d => d.DateCreated);
 
-                var result = await query.Skip(personFilterDto.Page).Take(personFilterDto.PageSize)
+                var result = await query
                   .CountAsync();
 
                 return result;

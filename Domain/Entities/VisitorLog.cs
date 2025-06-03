@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace Domain.Entities
 {
-    public class PersonAttendance : BaseModel
+    public class VisitorLog : BaseModel
     {
         [Key]
         public Guid Oid { get; set; }
 
-        [StringLength(50)]
-        public Guid? PersonId { get; set; }
+        //[Required]
+        //[StringLength(50)]
         public Guid? VisitorId { get; set; }
 
         public DateTime? AuthenticationDateAndTime { get; set; }
@@ -29,16 +29,20 @@ namespace Domain.Entities
         [StringLength(50)]
         public string? Direction { get; set; }
 
+        public int DeviceId { get; set; }
         [StringLength(100)]
         public string? DeviceName { get; set; }
 
         [StringLength(50)]
         public string? DeviceSerialNo { get; set; }
+
         [StringLength(50)]
         public string? CardNo { get; set; }
 
-        public bool? Sync { get; set; }
+        [ForeignKey("VisitorId")]
+        public virtual Visitor Visitor { get; set; }
 
-        public DateTime? CreationTime { get; set; }
+        [ForeignKey("DeviceId")]
+        public virtual Device Device { get; set; }
     }
 }

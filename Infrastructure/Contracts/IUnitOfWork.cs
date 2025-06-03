@@ -38,5 +38,6 @@ namespace Infrastructure.Contracts
         IDeviceSynchronizerRepository DeviceSynchronizerRepository { get; }
         IIdentifiedSyncDeviceRepository IdentifiedSyncDeviceRepository { get; }
         IDeviceLogRepository DeviceLogRepository { get; }
+        IVisitorLogRepository VisitorLogRepository { get; }
     }
 }
