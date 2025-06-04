@@ -26,10 +26,4 @@
       <ProjectReference Include="..\SurveillanceDevice.Integration\SurveillanceDevice.Integration.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Compile Update="Controllers\CardController.cs">
-        <DependentUpon>VisitorController.cs</DependentUpon>
-      </Compile>
-    </ItemGroup>
-
 </Project>

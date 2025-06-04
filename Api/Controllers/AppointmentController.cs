@@ -945,8 +945,9 @@ namespace Api.Controllers
                 }
 
                 var devices = new List<Device>();
-
-
+                
+                devices = context.DeviceRepository.GetAll().ToList();
+                
                 if (devices.Count() <= 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
 
@@ -1031,6 +1032,7 @@ namespace Api.Controllers
 
                 var devices = new List<Device>();
 
+                devices = context.DeviceRepository.GetAll().ToList();
 
                 if (devices.Count() <= 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);

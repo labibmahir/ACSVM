@@ -154,7 +154,7 @@ namespace Api.Controllers
         /// <returns>A list of user accounts.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadUserAccountAdvanceFilteration)]
-        [Authorize]
+        //[Authorize]
         public async Task<IActionResult> ReadUserAccountAdvanceFilteration([FromQuery] UserAccountAdvanceFilterDto userAccountAdvanceFilter)
         {
             try

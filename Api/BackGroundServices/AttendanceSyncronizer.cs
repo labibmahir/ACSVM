@@ -54,6 +54,7 @@ namespace Api.BackGroundServices
                         device.CurrentActiveStatus = true;
                         context.DeviceRepository.Update(device);
                         await context.SaveChangesAsync();
+                        
                         #region ACSEvent
 
                         // Processing ACS Event Data
@@ -503,16 +504,11 @@ namespace Api.BackGroundServices
 
                 }
 
-
-
-
-
                 await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
             }
-
-
         }
+        
         private async Task<bool> IsDeviceActive(string ipAddress)
         {
             try

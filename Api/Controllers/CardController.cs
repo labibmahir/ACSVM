@@ -55,6 +55,7 @@ namespace Api.Controllers
                 card.IsDeleted = false;
                 card.CreatedBy = GetLoggedInUserId();
                 card.CardNumber = cardDto.CardNumber;
+                card.Name = cardDto.Name;
                 card.Status = Enums.Status.Inactive;
 
                 context.CardRepository.Add(card);
@@ -483,6 +484,7 @@ namespace Api.Controllers
                 if (cardInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
+                cardInDb.Name = cardDto.Name;
                 cardInDb.CardNumber = cardDto.CardNumber;
                 cardInDb.DateModified = DateTime.Now;
                 cardInDb.ModifiedBy = GetLoggedInUserId();

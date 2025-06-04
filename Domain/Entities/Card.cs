@@ -10,6 +10,9 @@ public class Card : BaseModel
     [Key]
     public Guid Oid { get; set; }
     
+    [StringLength(90)]
+    public string Name { get; set; }
+    
     [Required]
     public string CardNumber { get; set; }
     

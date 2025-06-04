@@ -280,7 +280,13 @@ namespace Infrastructure.Repositories
 
 
                 if (!string.IsNullOrEmpty(userAccountAdvanceFilter.FullName))
-                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()));
+                {
+                    var fullName = userAccountAdvanceFilter.FullName.ToLower().Trim();
+                    
+                    query = query.Where(x => (x.FirstName + " " + x.Surname).ToLower().Trim() == fullName || 
+                                             x.FirstName.ToLower().Trim() == fullName ||
+                                             x.Surname.ToLower().Trim() == fullName);
+                }
 
 
                 if (!string.IsNullOrEmpty(userAccountAdvanceFilter.Email))

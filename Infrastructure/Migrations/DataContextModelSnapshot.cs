@@ -209,6 +209,10 @@ namespace Infrastructure.Migrations
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Name")
+                        .HasMaxLength(90)
+                        .HasColumnType("nvarchar(90)");
+
                     b.Property<int?>("OrganizationId")
                         .HasColumnType("int");
 
