@@ -99,7 +99,7 @@ namespace Api.Controllers
                     if (!await IsDeviceActive(device.DeviceIP))
                     {
                         devices = devices.Where(x => x.Oid != device.Oid).ToList();
-                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
+                        //return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
                     }
 
                 }
@@ -340,7 +340,7 @@ namespace Api.Controllers
                     var devicelist = await context.DeviceRepository.GetDevicesByAccessLevels(personDto.AccessLevelIds);
                     devices = devicelist.ToList();
                 }
-                else
+                if (personDto.DeviceIdList != null && personDto.DeviceIdList.Count() > 0)
                 {
                     var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(personDto.DeviceIdList);
                     devices = devicelist.ToList();

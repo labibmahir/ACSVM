@@ -175,17 +175,19 @@ namespace Api.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
             }
         }
-        [HttpPost]
+        [HttpDelete]
         [Route(RouteConstants.DeletePersonAttendance)]
         public async Task<IActionResult> DeletePersonAttendance(AttendanceDeleteDto attendanceDeleteDto)
         {
             try
             {
                 var personAttendances = await context.AttendanceRepository.GetPersonAttendancesBetweenDates(attendanceDeleteDto.FromDate, attendanceDeleteDto.ToDate);
+
+                if (personAttendances == null || personAttendances.Count() == 0)
+                    return StatusCode(StatusCodes.Status404NotFound);
+
                 var attendances = personAttendances.ToList();
 
-                if (attendances == null || attendances.Count() == 0)
-                    return StatusCode(StatusCodes.Status404NotFound);
 
                 // Generate Excel in memory
                 using var workbook = new XLWorkbook();
@@ -223,23 +225,26 @@ namespace Api.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpDelete]
         [Route(RouteConstants.DeleteVisitorAttendance)]
         public async Task<IActionResult> DeleteVisitorAttendance(AttendanceDeleteDto attendanceDeleteDto)
         {
             try
             {
                 var visitorAttendances = await context.VisitorLogRepository.GetVisitorAttendancesBetweenDates(attendanceDeleteDto.FromDate, attendanceDeleteDto.ToDate);
+          
+                if (visitorAttendances == null || visitorAttendances.Count() == 0)
+                    return StatusCode(StatusCodes.Status404NotFound);
+                
                 var attendances = visitorAttendances.ToList();
 
-                if (attendances == null || attendances.Count() > 0)
-                    return StatusCode(StatusCodes.Status404NotFound);
+           
 
                 // Generate Excel in memory
                 using var workbook = new XLWorkbook();
                 var worksheet = workbook.Worksheets.Add("Deleted Attendance");
                 worksheet.Cell(1, 1).Value = "Device Ip";
-                worksheet.Cell(1, 2).Value = "Person Number";
+                worksheet.Cell(1, 2).Value = "Visitor Number";
                 worksheet.Cell(1, 3).Value = "Full Name";
                 worksheet.Cell(1, 4).Value = "Authentication Date And Time";
 
