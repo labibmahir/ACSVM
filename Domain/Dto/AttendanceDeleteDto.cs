@@ -7,15 +7,12 @@ using System.Threading.Tasks;
 
 namespace Domain.Dto
 {
-    public class CardDto
+    public class AttendanceDeleteDto
     {
-        public Guid Oid { get; set; }
-        
-        public string Name { get; set; }
+        [Required]
+        public DateTime FromDate { get; set; }
 
         [Required]
-        public string CardNumber { get; set; }
-        [Required]
-        public string CardName { get; set; }
+        public DateTime ToDate { get; set; }
     }
 }

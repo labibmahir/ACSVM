@@ -18,5 +18,6 @@ namespace Infrastructure.Contracts
         public Task<int> GetVisitorAttendancesCount(VisitorAttendanceFilterDto visitorAttendanceFilterDto);
 
         public Task<IEnumerable<VisitorLog>> GetAttendanceByVisitorId(Guid visitorId);
+        public Task<IEnumerable<VisitorLog>> GetVisitorAttendancesBetweenDates(DateTime StartDate, DateTime EndDate);
     }
 }

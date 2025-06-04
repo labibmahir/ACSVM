@@ -92,6 +92,22 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+        public async Task<IEnumerable<Attendance>> GetPersonAttendancesBetweenDates(DateTime StartDate, DateTime EndDate)
+        {
+            try
+            {
+                var query = context.Attendances.Include(p => p.Person).Include(d => d.Device).Where(x => x.IsDeleted == false
+                && (x.AuthenticationDate.HasValue && x.AuthenticationDate.Value.Date >= StartDate.Date && x.AuthenticationDate.Value.Date <= EndDate.Date)
+                ).AsQueryable();
+
+                return await query.ToListAsync();
+            }
+            catch
+            {
+                throw;
+
+            }
+        }
         public async Task<int> GetPersonAttendancesCount(PersonAttendanceFilterDto personAttendanceFilterDto)
         {
             try

@@ -9,16 +9,15 @@ public class Card : BaseModel
 {
     [Key]
     public Guid Oid { get; set; }
-    
-    [StringLength(90)]
-    public string Name { get; set; }
-    
+
     [Required]
     public string CardNumber { get; set; }
-    
+    [Required]
+    public string CardName { get; set; }
+
     [Required]
     public Enums.Status Status { get; set; }
-    
+
     [JsonIgnore]
     public virtual IEnumerable<IdentifiedAssignCard> IdentifiedAssignCards { get; set; }
 }
