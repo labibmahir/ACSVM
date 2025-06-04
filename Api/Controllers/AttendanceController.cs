@@ -39,7 +39,6 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadPersonAttendances)]
-
         public async Task<IActionResult> ReadPersonAttendances([FromQuery] PersonAttendanceFilterDto personAttendanceFilterDto)
         {
             try

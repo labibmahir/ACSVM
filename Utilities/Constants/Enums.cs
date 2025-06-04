@@ -50,6 +50,7 @@
             Inactive = 2,
 
             Allocated = 3,
+            
             NotInService = 4
         }
 
@@ -91,6 +92,7 @@
             Update = 2,
 
             Read = 3,
+            
             Delete = 4
         }
     }

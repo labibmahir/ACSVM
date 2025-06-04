@@ -10,8 +10,6 @@ namespace Domain.Dto
     public class CardDto
     {
         public Guid Oid { get; set; }
-        
-        public string Name { get; set; }
 
         [Required]
         public string CardNumber { get; set; }

@@ -51,6 +51,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
         [Route(RouteConstants.CreateAppointment)]
+        [AllowAnonymous]
         public async Task<ActionResult<Person>> CreateAppointment(AppointmentDto appointmentDto)
         {
             try
@@ -77,9 +78,9 @@ namespace Api.Controllers
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.PersonNotFound);
                 }
                 Card visitorCard = new Card();
-                if (!string.IsNullOrEmpty(appointmentDto.CardNumber))
+                if (appointmentDto.CardId != Guid.Empty)
                 {
-                    var card = await context.CardRepository.GetCardByCardNumber(appointmentDto.CardNumber);
+                    var card = await context.CardRepository.GetCardByKey(appointmentDto.CardId);
 
                     if (card.Status == Enums.Status.NotInService)
                         return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardNotInService);
@@ -92,18 +93,8 @@ namespace Api.Controllers
 
                     visitorCard = card;
                 }
-
-                //if (appointmentDto.Image != null && appointmentDto.Image.Length > 0)
-                //{
-                //    var allowedImageTypes = new[] { "image/jpeg", "image/png" };
-
-                //    if (!allowedImageTypes.Contains(appointmentDto.Image.ContentType.ToLower()))
-                //    {
-                //        return BadRequest("Only image files (JPEG, PNG) are allowed.");
-                //    }
-                //}
-
-
+                
+                
                 var devices = new List<Device>();
                 if (appointmentDto.AccessLevelList.Length > 0)
                 {
@@ -125,17 +116,7 @@ namespace Api.Controllers
                 // var currentlyInActiveDevices = new List<Device>();
                 if (devices.Count() <= 0)
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
-
-                foreach (var device in devices)
-                {
-                    //if (!await IsDeviceActive(device.DeviceIP))
-                    //{
-                    //    // devices = devices.Where(x => x.Oid != device.Oid).ToList();
-                    //    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
-
-                    //}
-
-                }
+                
 
                 List<int> visitorToBeUpdateInDevices = new List<int>();
                 List<int> visitorToBeAddedInDevices = new List<int>();
@@ -166,7 +147,7 @@ namespace Api.Controllers
                     };
                     context.VisitorRepository.Add(visitor);
                     #region assigning Card to visitor
-                    if (!string.IsNullOrEmpty(appointmentDto.CardNumber))
+                    if (appointmentDto.CardId != Guid.Empty)
                     {
                         IdentifiedAssignCard identifiedAssignCard = new IdentifiedAssignCard()
                         {
@@ -205,7 +186,7 @@ namespace Api.Controllers
                     };
                     context.VisitorRepository.Update(visitor);
                     #region assigning Card to visitor
-                    if (!string.IsNullOrWhiteSpace(appointmentDto.CardNumber))
+                    if (appointmentDto.CardId != Guid.Empty)
                     {
                         var identifiedAssignedCard = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByVisitor(visitor.Oid);
                         if (identifiedAssignedCard != null)
@@ -258,86 +239,7 @@ namespace Api.Controllers
                     foreach (var item in identifiedAssignedDeviceByVisitor)
                         context.IdentifiedAssignDeviceRepository.Delete(new IdentifiedAssignDevice() { Oid = item.Oid });
                 }
-
-                //List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
-
-                //VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
-                //{
-                //    doorNo = 1,
-                //    planTemplateNo = "1",
-                //};
-
-                //vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
-
-
-                //VMUserInfo vMUserInfo = new VMUserInfo()
-                //{
-                //    employeeNo = visitor.VisitorNumber,
-                //    deleteUser = false,
-                //    name = visitor.FirstName + " " + visitor.Surname,
-                //    userType = "normal",
-                //    closeDelayEnabled = true,
-                //    Valid = new VMEffectivePeriod()
-                //    {
-                //        enable = true,
-                //        beginTime = visitor.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                //        endTime = visitor.ValidateEndPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
-                //        timeType = "local"
-                //    },
-                //    doorRight = "1",
-                //    RightPlan = vMDoorPermissionSchedules,
-                //    localUIRight = false,
-                //    userVerifyMode = visitor.UserVerifyMode switch
-                //    {
-                //        Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
-                //        Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
-                //        Enums.UserVerifyMode.card => "card",
-                //        _ => "faceAndFpAndCard"//this is default
-                //    },
-                //    checkUser = true,
-                //    addUser = true,
-                //    callNumbers = new List<string> { " 1-1-1-401" },
-                //    floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
-                //    gender = visitor.Gender switch
-                //    {
-                //        Enums.Gender.Male => "male",
-                //        Enums.Gender.Female => "female",
-                //        _ => "other"
-                //    },
-                //};
-
-
-
-                //if (visitorToBeAddedInDevices.Count() > 0)
-                //{
-                //    foreach (var device in devices.Where(x => visitorToBeAddedInDevices.Contains(x.Oid)).ToList())
-                //    {
-                //        //var vService = await _visionMachineService.AddUser(device, vMUserInfo);
-                //        //var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
-                //        //if (res.StatusCode != 1)
-                //        //{
-                //        //    return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                //        //}
-
-                //    }
-                //}
-                //if (visitorToBeUpdateInDevices.Count() > 0)
-                //{
-                //    foreach (var device in devices.Where(x => visitorToBeUpdateInDevices.Contains(x.Oid)).ToList())
-                //    {
-                //        //var vService = await _visionMachineService.UpdateUser(device, vMUserInfo);
-                //        //var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
-                //        //if (res.StatusCode != 1)
-                //        //{
-                //        //    return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
-                //        //}
-
-
-                //    }
-                //}
-
-
-                // context.VisitorRepository.Add(visitor);
+                
                 await context.SaveChangesAsync();
                 List<IdentifiedAssignDevice> identifiedAssignDevices = new List<IdentifiedAssignDevice>();
                 foreach (var item in devices)
@@ -630,9 +532,9 @@ namespace Api.Controllers
                 }
 
                 Card visitorCard = new Card();
-                if (!string.IsNullOrEmpty(appointmentDto.CardNumber))
+                if (appointmentDto.CardId == Guid.Empty)
                 {
-                    var card = await context.CardRepository.GetCardByCardNumber(appointmentDto.CardNumber);
+                    var card = await context.CardRepository.GetCardByKey(appointmentDto.CardId);
 
                     if (card.Status == Enums.Status.NotInService)
                         return StatusCode(StatusCodes.Status404NotFound, MessageConstants.CardNotInService);
@@ -726,7 +628,7 @@ namespace Api.Controllers
 
                 context.VisitorRepository.Update(visitorInDb);
                 #region Card Assignment
-                if (!string.IsNullOrWhiteSpace(appointmentDto.CardNumber))
+                if (appointmentDto.CardId == Guid.Empty)
                 {
                     var identifiedAssignedCard = await context.IdentifiedAssignCardRepository.GetIdentifiedAssignCardByVisitor(visitorInDb.Oid);
                     if (identifiedAssignedCard != null)
@@ -934,11 +836,6 @@ namespace Api.Controllers
                     foreach (var item in assignedDevices)
                     {
                         var result = await _visionMachineService.DeleteCard(item.Device, vMCardInfoDeleteRequest);
-
-                        if (!result.Success)
-                        {
-
-                        }
                     }
                     await context.SaveChangesAsync();
 

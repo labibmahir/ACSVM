@@ -62,7 +62,7 @@ namespace Infrastructure.Repositories
         {
             try
             {
-                var query = context.Attendances.Include(p => p.Person).Where(i => i.IsDeleted == false).AsQueryable();
+                var query = context.Attendances.Include(p => p.Person).Include(d => d.Device).Where(i => i.IsDeleted == false).AsQueryable();
 
                 if (!string.IsNullOrEmpty(personAttendanceFilterDto.search))
                     query = query.Where(x => x.Person.FirstName.ToLower().Contains(personAttendanceFilterDto.search.ToLower().Trim())
@@ -76,6 +76,9 @@ namespace Infrastructure.Repositories
 
                 if (personAttendanceFilterDto.AttendanceDate.HasValue && personAttendanceFilterDto.AttendanceDate.Value.Date != DateTime.MinValue.Date)
                     query = query.Where(x => x.AuthenticationDate != null && x.AuthenticationDate.Value.Date == personAttendanceFilterDto.AttendanceDate.Value.Date);
+                
+                if (personAttendanceFilterDto.ToDate.HasValue && personAttendanceFilterDto.FromDate.Value.Date != DateTime.MinValue.Date)
+                    query = query.Where(x => x.AuthenticationDate != null && x.AuthenticationDate.Value.Date == personAttendanceFilterDto.FromDate.Value.Date && x.AuthenticationDate.Value.Date == personAttendanceFilterDto.ToDate.Value.Date);
 
                 if (personAttendanceFilterDto.orderBy.ToLower().Trim() == "desc")
                     query = query.OrderByDescending(d => d.DateCreated);

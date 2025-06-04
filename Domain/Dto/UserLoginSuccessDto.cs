@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Utilities.Constants;
 
 namespace Domain.Dto
 {
@@ -16,7 +17,7 @@ namespace Domain.Dto
         /// <summary>
         /// Gets or sets the first name of the user.
         /// </summary>
-        public string Firstname { get; set; }
+        public string FirstName { get; set; }
 
         /// <summary>
         /// Gets or sets the last name (surname) of the user.
@@ -50,6 +51,8 @@ namespace Domain.Dto
         /// This is typically used for session management.
         /// </summary>
         public string Token { get; set; }
+        
+        public Enums.Role? RoleId { get; set; }
 
         public Guid RefreshToken { get; set;  }
     }

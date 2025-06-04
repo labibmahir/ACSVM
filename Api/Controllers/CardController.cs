@@ -494,6 +494,7 @@ namespace Api.Controllers
                 if (cardInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
+                cardInDb.CardName = cardDto.CardName;
                 cardInDb.CardNumber = cardDto.CardNumber;
                 cardInDb.DateModified = DateTime.Now;
                 cardInDb.ModifiedBy = GetLoggedInUserId();
@@ -502,6 +503,45 @@ namespace Api.Controllers
                 await context.SaveChangesAsync();
 
                 return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+
+        [HttpPut]
+        [Route(RouteConstants.ReactivatedCard)]
+        public async Task<IActionResult> ReactivateCard(Guid key)
+        {
+            try
+            {
+                if (key == Guid.Empty)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
+
+                var cardInDb = await context.CardRepository.GetCardByKey(key);
+
+                if (cardInDb == null)
+                    return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
+
+                if (cardInDb.Status == Enums.Status.NotInService)
+                {
+                    var checkIfCardIsAssigned = await context.IdentifiedAssignCardRepository.FirstOrDefaultAsync(x => x.IsDeleted == false && x.CardId == key);
+
+                    cardInDb.DateModified = DateTime.Now;
+                    cardInDb.ModifiedBy = GetLoggedInUserId();
+                    cardInDb.IsDeleted = false;
+                    cardInDb.Status = Enums.Status.Inactive;
+
+                    context.CardRepository.Update(cardInDb);
+                    await context.SaveChangesAsync();
+
+                    return Ok(cardInDb);
+                }
+                
+                return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.CardCurrenlyActive);
+               
             }
             catch (Exception ex)
             {
@@ -548,7 +588,7 @@ namespace Api.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
             }
         }
-
+        
         private async Task<bool> IsDeviceActive(string ipAddress)
         {
             try

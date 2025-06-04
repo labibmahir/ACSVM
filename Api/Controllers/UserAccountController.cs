@@ -317,12 +317,13 @@ namespace Api.Controllers
                 UserLoginSuccessDto userDetailsDto = new UserLoginSuccessDto
                 {
                     Oid = user.Oid,
-                    Firstname = user.FirstName,
+                    FirstName = user.FirstName,
                     Surname = user.Surname,
                     Email = user.Email,
                     CountryCode = user.CountryCode,
                     CellPhone = user.CellPhone,
                     Username = user.Username,
+                    RoleId = user.RoleId,
                     Token = GenerateJwtToken(user, DateTime.UtcNow.AddDays(tokenValidityInMinutes)),
                     RefreshToken = Guid.NewGuid()
 
@@ -365,12 +366,13 @@ namespace Api.Controllers
                 UserLoginSuccessDto userDetailsDto = new UserLoginSuccessDto
                 {
                     Oid = user.Oid,
-                    Firstname = user.FirstName,
+                    FirstName = user.FirstName,
                     Surname = user.Surname,
                     Email = user.Email,
                     CountryCode = user.CountryCode,
                     CellPhone = user.CellPhone,
                     Username = user.Username,
+                    RoleId = user.RoleId,
                     Token = GenerateJwtToken(user, DateTime.UtcNow.AddDays(7)),
                     RefreshToken=Guid.NewGuid()
                 };

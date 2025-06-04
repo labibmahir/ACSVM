@@ -331,6 +331,7 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var personInDb = await context.PersonRepository.GetPersonByKey(personDto.Oid);
+                
                 if (personInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 

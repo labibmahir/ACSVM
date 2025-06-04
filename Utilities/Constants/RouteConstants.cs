@@ -113,6 +113,8 @@ namespace Utilities.Constants
         public const string UnAssignCardToPerson = "card-un-assign-person";
         public const string AssignCardToVisitor = "card-assign-visitor";
         public const string UnAssignCardToVisitor = "card-un-assign-visitor";
+        
+        public const string ReactivatedCard = "card-reactivated/{key}";
 
         public const string ReadCards = "cards";
 
