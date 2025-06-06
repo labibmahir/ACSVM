@@ -61,6 +61,7 @@ namespace Utilities.Constants
 
         #region Person
         public const string CreatePerson = "person";
+        public const string CreatePersonFromExcel = "person-import-from-excel";
 
         public const string ReadPersons = "persons";
         public const string ReadPersonsMinifiedData = "persons-minified-data";

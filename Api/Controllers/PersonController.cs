@@ -4,6 +4,7 @@ using Domain.Dto;
 using Domain.Dto.HIKVision;
 using Domain.Dto.PaginationFiltersDto;
 using Domain.Entities;
+using Domain.Helper;
 using Infrastructure.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -331,7 +332,7 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
 
                 var personInDb = await context.PersonRepository.GetPersonByKey(personDto.Oid);
-                
+
                 if (personInDb == null)
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.NoMatchFoundError);
 
@@ -492,7 +493,179 @@ namespace Api.Controllers
             }
         }
 
+        /// <summary>
+        /// URL: api/person-omport-from-excel
+        /// </summary>
+        /// <param name="person">person object.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpPost]
+        [Route(RouteConstants.CreatePersonFromExcel)]
+        public async Task<ActionResult<Person>> CreatePersonFromExcel(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest("Excel file is required.");
 
+                using var stream = new MemoryStream();
+                await file.CopyToAsync(stream);
+                stream.Position = 0;
+
+                var persons = ExcelHelper.ReadPersonsFromExcel(stream);
+                if (persons.ValidationErrors != null && persons.ValidationErrors.Count() > 0)
+                {
+                    return BadRequest(persons);
+                }
+                foreach (var personDto in persons.Persons)
+                {
+                    if ((personDto.AccessLevelIds == null || personDto.AccessLevelIds.Length == 0) && (personDto.DeviceIdList == null || personDto.DeviceIdList.Length == 0))
+                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
+
+                    var personWithSamePhone = await context.PersonRepository.GetPersonByphoneNumber(personDto.PhoneNumber);
+
+                    if (personWithSamePhone != null && personWithSamePhone.OrganizationId == personDto.OrganizationId)
+                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DuplicateIPError);
+
+                    var devices = new List<Device>();
+                    if (personDto.AccessLevelIds != null && personDto.AccessLevelIds.Count() > 0)
+                    {
+                        var devicelist = await context.DeviceRepository.GetDevicesByAccessLevels(personDto.AccessLevelIds);
+                        devices = devicelist.ToList();
+                    }
+                    if (personDto.DeviceIdList != null && personDto.DeviceIdList.Count() > 0)
+                    {
+                        var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(personDto.DeviceIdList);
+                        devices = devicelist.ToList();
+                    }
+
+                    var currentlyInActiveDevices = new List<Device>();
+                    if (devices.Count() <= 0)
+                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
+
+
+                    Person person = new Person()
+                    {
+                        DateCreated = DateTime.Now,
+                        IsDeleted = false,
+                        CreatedBy = GetLoggedInUserId(),
+                        Email = personDto.Email,
+                        FirstName = personDto.FirstName,
+                        Gender = personDto.Gender,
+                        OrganizationId = personDto.OrganizationId,
+                        PersonNumber = personDto.PersonNumber,//GeneratePersonNo(),
+                        PhoneNumber = personDto.PhoneNumber,
+                        Surname = personDto.Surname,
+                        IsDeviceAdministrator = personDto.IsDeviceAdministrator,
+                        UserVerifyMode = personDto.UserVerifyMode,
+                        ValidateEndPeriod = personDto.ValidateEndPeriod,
+                        ValidateStartPeriod = personDto.ValidateStartPeriod,
+                        Department = personDto.Department,
+                        Oid = Guid.NewGuid()
+
+                    };
+
+
+                    foreach (var device in devices)
+                    {
+                        if (!await IsDeviceActive(device.DeviceIP))
+                        {
+                            devices = devices.Where(x => x.Oid != device.Oid).ToList();
+                            //return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
+                        }
+
+                    }
+
+                    if (devices.Count() <= 0)
+                        return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotActive);
+
+
+                    List<VMDoorPermissionSchedule> vMDoorPermissionSchedules = new List<VMDoorPermissionSchedule>();
+
+                    VMDoorPermissionSchedule vMDoorPermissionSchedule = new VMDoorPermissionSchedule()
+                    {
+                        doorNo = 1,
+                        planTemplateNo = "1",
+                    };
+
+                    vMDoorPermissionSchedules.Add(vMDoorPermissionSchedule);
+
+
+                    VMUserInfo vMUserInfo = new VMUserInfo()
+                    {
+                        employeeNo = person.PersonNumber,
+                        deleteUser = false,
+                        name = person.FirstName + " " + person.Surname,
+                        userType = "normal",
+                        closeDelayEnabled = true,
+                        Valid = new VMEffectivePeriod()
+                        {
+                            enable = true,
+                            beginTime = person.ValidateStartPeriod.ToString("yyyy-MM-ddTHH:mm:ss"),
+                            endTime = person.ValidateEndPeriod?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                            timeType = "local"
+                        },
+                        doorRight = "1",
+                        RightPlan = vMDoorPermissionSchedules,
+                        localUIRight = person.IsDeviceAdministrator,
+                        userVerifyMode = personDto.UserVerifyMode switch
+                        {
+                            Enums.UserVerifyMode.faceAndFpAndCard => "faceAndFpAndCard",
+                            Enums.UserVerifyMode.faceOrFpOrCardOrPw => "faceOrFpOrCardOrPw",
+                            Enums.UserVerifyMode.card => "card",
+                            _ => "faceAndFpAndCard"//this is default
+                        },
+                        checkUser = true,
+                        addUser = true,
+                        //callNumbers = new List<string> { $"{person.PhoneNumber}" },
+                        callNumbers = new List<string> { " 1-1-1-401" },
+                        floorNumbers = new List<FloorNumber> { new FloorNumber() { min = 1, max = 100 } },
+                        gender = person.Gender switch
+                        {
+                            Enums.Gender.Male => "male",
+                            Enums.Gender.Female => "female",
+                            _ => "other"
+                        },
+                    };
+
+                    foreach (var device in devices)
+                    {
+                        var vService = await _visionMachineService.AddUser(device, vMUserInfo);
+                        var res = System.Text.Json.JsonSerializer.Deserialize<ErrorMessage>(vService);
+                        if (res.StatusCode != 1)
+                        {
+                            return StatusCode(StatusCodes.Status400BadRequest, $"Device Error , statusString: {res.ErrorCode} ErrorMessage: {res.ErrorMsg}");
+                        }
+                    }
+
+
+                    context.PersonRepository.Add(person);
+                    await context.SaveChangesAsync();
+                    List<IdentifiedAssignDevice> identifiedAssignDevices = new List<IdentifiedAssignDevice>();
+                    foreach (var item in devices.Concat(currentlyInActiveDevices))
+                    {
+                        IdentifiedAssignDevice identifiedAssignDevice = new IdentifiedAssignDevice()
+                        {
+                            CreatedBy = GetLoggedInUserId(),
+                            DateCreated = DateTime.Now,
+                            DeviceId = item.Oid,
+                            OrganizationId = person.OrganizationId,
+                            PersonId = person.Oid,
+                            IsDeleted = false
+
+                        };
+                        identifiedAssignDevices.Add(identifiedAssignDevice);
+                    }
+
+                    context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
+                    await context.SaveChangesAsync();
+                }
+                return Ok(persons);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
         /// <summary>
         /// URL: api/person/{key}
         /// </summary>

@@ -234,18 +234,36 @@ namespace Infrastructure.Repositories
                        );
 
 
+                //if (!string.IsNullOrEmpty(userAccountAdvanceFilter.FullName))
+                //    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()));
                 if (!string.IsNullOrEmpty(userAccountAdvanceFilter.FullName))
-                    query = query.Where(x => x.FirstName.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()) || x.Surname.ToLower().Contains(userAccountAdvanceFilter.FullName.ToLower().Trim()));
+                {
+                    var fullNameSearch = userAccountAdvanceFilter.FullName.ToLower().Trim();
+                    query = query.Where(x =>
+                        (x.FirstName + " " + x.Surname).ToLower().Contains(fullNameSearch) ||
+                        x.FirstName.ToLower().Contains(fullNameSearch) ||
+                        x.Surname.ToLower().Contains(fullNameSearch));
+                }
 
 
                 if (!string.IsNullOrEmpty(userAccountAdvanceFilter.Email))
                     query = query.Where(x => x.Email.ToLower() == userAccountAdvanceFilter.Email.ToLower().Trim());
 
 
+                //if (!string.IsNullOrEmpty(userAccountAdvanceFilter.CellPhoneAndCountryCode))
+                //    query = query.Where(x => userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CountryCode + x.CellPhone.ToLower())
+                //    || userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CellPhone)
+                //    ); 
                 if (!string.IsNullOrEmpty(userAccountAdvanceFilter.CellPhoneAndCountryCode))
-                    query = query.Where(x => userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CountryCode + x.CellPhone.ToLower())
-                    || userAccountAdvanceFilter.CellPhoneAndCountryCode.Contains(x.CellPhone)
+                {
+                    var input = userAccountAdvanceFilter.CellPhoneAndCountryCode.ToLower().Trim();
+                    query = query.Where(x =>
+                        (x.CountryCode + x.CellPhone).ToLower().Contains(input) ||
+                        x.CellPhone.ToLower().Contains(input)
                     );
+                }
+
+
 
                 if (userAccountAdvanceFilter.RoleId.HasValue && userAccountAdvanceFilter.RoleId != 0)
                     query = query.Where(x => x.RoleId == userAccountAdvanceFilter.RoleId.Value);
