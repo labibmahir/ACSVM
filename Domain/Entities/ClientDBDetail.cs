@@ -35,6 +35,7 @@ namespace Domain.Entities
         public string? ConnectionMode { get; set; }
 
         public bool IsConnectionActive { get; set; }
+        public bool UseClientDb { get; set; }
 
         [Required]
         [StringLength(250)]

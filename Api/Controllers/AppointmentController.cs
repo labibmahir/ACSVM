@@ -364,7 +364,7 @@ namespace Api.Controllers
                 context.IdentifiedAssignedAppointmentRepository.AddRange(identifiedAssignedAppointments);
                 await context.SaveChangesAsync();
                 //#endregion
-                IProcess importPeople = new DeviceActionProcess(deviceSynchronizer, ProcessPriority.Urgent);
+                IProcess importPeople = new DeviceActionProcess(_configuration, deviceSynchronizer, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
                 return Ok(appointment);
             }
@@ -772,7 +772,7 @@ namespace Api.Controllers
                 await context.SaveChangesAsync();
                 #endregion
 
-                IProcess importPeople = new DeviceActionProcess(deviceSynchronizer, ProcessPriority.Urgent);
+                IProcess importPeople = new DeviceActionProcess(_configuration, deviceSynchronizer, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
 
                 return StatusCode(StatusCodes.Status204NoContent);

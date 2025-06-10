@@ -61,7 +61,7 @@ namespace Utilities.Constants
 
         #region Person
         public const string CreatePerson = "person";
-        public const string CreatePersonFromExcel = "person-import-from-excel";
+        public const string CreatePersonFromExcelOrCSV = "person-import-from-excel-or-csv";
 
         public const string ReadPersons = "persons";
         public const string ReadPersonsMinifiedData = "persons-minified-data";
@@ -114,7 +114,7 @@ namespace Utilities.Constants
         public const string UnAssignCardToPerson = "card-un-assign-person";
         public const string AssignCardToVisitor = "card-assign-visitor";
         public const string UnAssignCardToVisitor = "card-un-assign-visitor";
-        
+
         public const string ReactivatedCard = "card-reactivated/{key}";
 
         public const string ReadCards = "cards";

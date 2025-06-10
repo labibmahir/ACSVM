@@ -17,17 +17,19 @@ namespace Api.BackGroundServices
 {
     public class DataExchangeSyncronizer : BackgroundService
     {
-        private readonly ILogger<AttendanceSyncronizer> _logger;
+        private readonly ILogger<DataExchangeSyncronizer> _logger;
         private readonly IServiceProvider _serviceProvider;
         //   private readonly IHubContext<NotificationsHub> _hubContext;
         private static AttendanceNotificationAggrigator _attendanceAggrigator;
-        public DataExchangeSyncronizer(
-            ILogger<AttendanceSyncronizer> logger,
+        private readonly string? _logDirectory;
+        public DataExchangeSyncronizer(IConfiguration configuration,
+            ILogger<DataExchangeSyncronizer> logger,
             IServiceProvider serviceProvider
             // , IHubContext<NotificationsHub> hubContext
             )
         {
             _logger = logger;
+            _logDirectory = configuration["ServiceLogFilePath:FileLogPath"];
             _serviceProvider = serviceProvider;
             // _hubContext = hubContext;
             ///_attendanceAggrigator = new AttendanceNotificationAggrigator(_hubContext);
@@ -36,192 +38,216 @@ namespace Api.BackGroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            WriteLogToFile($"DataExchange BackGround Service Started");
             List<Device> devices = new List<Device>();
             Dictionary<string, Task> monitoringTasks = new();
             while (!stoppingToken.IsCancellationRequested)
             {
-                using (var scope = _serviceProvider.CreateScope())
+                try
                 {
-                    var context = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-                    var visionMachineService = scope.ServiceProvider.GetRequiredService<IHikVisionMachineService>();
-                    var _dbContextFactory = scope.ServiceProvider.GetRequiredService<DynamicDbContextFactory>();
-                    var devicesList = await context.DeviceRepository.QueryAsync(x => x.IsDeleted == false);
-                    devices = devicesList.ToList();
-                    #region ACSEvent
-                    foreach (var device in devices)
+                    using (var scope = _serviceProvider.CreateScope())
                     {
-                        if (!await IsDeviceActive(device.DeviceIP))
-                        {
-                            continue;
-                        }
+                        var context = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                        var visionMachineService = scope.ServiceProvider.GetRequiredService<IHikVisionMachineService>();
+                        var _dbContextFactory = scope.ServiceProvider.GetRequiredService<DynamicDbContextFactory>();
+                        var devicesList = await context.DeviceRepository.QueryAsync(x => x.IsDeleted == false);
+                        devices = devicesList.ToList();
                         #region ACSEvent
-                        // Processing ACS Event Data
-                        DateTime startTime = device.DateCreated ?? DateTime.Now; // Start from Jan 1, 2022
-                                                                                 //   DateTime startTime = DateTime.Now.AddDays(-2); // Start from Jan 1, 2022
-                                                                                 //DateTime startTime = DateTime.Now;
-                                                                                 // DateTime endTime = startTime.AddDays(1); // Process 1 day at a time
-                        DateTime endTime = startTime.AddDays(1); // Process 1 day at a time
-
-                        while (startTime < DateTime.Now) // Continue until today
+                        foreach (var device in devices)
                         {
-                            try
+                            if (!await IsDeviceActive(device.DeviceIP))
                             {
-                                //_logger.LogInformation("Fetching ACS events from {StartTime} to {EndTime} for Device {DeviceId}",
-                                //    startTime, endTime, device.DeviceID);
-                                //WriteLogToFile($"{device.IP}");
-                                int acsEventCount = await visionMachineService.GetAcsEventCount(device, startTime, endTime);
-                                var acsEventInfo = new List<Info>();
+                                continue;
+                            }
+                            #region ACSEvent
+                            // Processing ACS Event Data
+                            DateTime startTime = device.DateCreated ?? DateTime.Now; // Start from Jan 1, 2022
+                                                                                     //   DateTime startTime = DateTime.Now.AddDays(-2); // Start from Jan 1, 2022
+                                                                                     //DateTime startTime = DateTime.Now;
+                                                                                     // DateTime endTime = startTime.AddDays(1); // Process 1 day at a time
+                            DateTime endTime = startTime.AddDays(1); // Process 1 day at a time
 
-                                int acsEventLastIndex = 0;
-                                List<Task<AcsEventResponse>> acsEventTasks = new List<Task<AcsEventResponse>>();
-                                // WriteLogToFile($"{acsEventInfo.Count}");
-                                while (acsEventInfo.Count < acsEventCount)
+                            while (startTime < DateTime.Now) // Continue until today
+                            {
+                                try
                                 {
+                                    //_logger.LogInformation("Fetching ACS events from {StartTime} to {EndTime} for Device {DeviceId}",
+                                    //    startTime, endTime, device.DeviceID);
+                                    WriteLogToFile($"{device.DeviceIP}");
+                                    int acsEventCount = await visionMachineService.GetAcsEventCount(device, startTime, endTime);
+                                    var acsEventInfo = new List<Info>();
+
+                                    int acsEventLastIndex = 0;
+                                    List<Task<AcsEventResponse>> acsEventTasks = new List<Task<AcsEventResponse>>();
+                                    // WriteLogToFile($"{acsEventInfo.Count}");
+                                    while (acsEventInfo.Count < acsEventCount)
+                                    {
+                                        try
+                                        {
+                                            var task = visionMachineService.GetAcsEvent(device, startTime, endTime, acsEventLastIndex, 20);
+                                            acsEventTasks.Add(task);
+
+                                            if (acsEventTasks.Count >= 1) // Process in batches
+                                            {
+                                                var completedTasks = await Task.WhenAll(acsEventTasks);
+                                                acsEventTasks.Clear();
+
+                                                foreach (var result in completedTasks)
+                                                {
+                                                    if (result?.AcsEvent != null && result.AcsEvent.InfoList.Any())
+                                                    {
+                                                        acsEventInfo.AddRange(result.AcsEvent.InfoList);
+                                                        acsEventLastIndex += result.AcsEvent.InfoList.Count;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            //_logger.LogError(ex, "Error fetching ACS events for device {DeviceId} on {StartTime}",
+                                            //    device.DeviceID, startTime);
+                                        }
+                                    }
+
                                     try
                                     {
-                                        var task = visionMachineService.GetAcsEvent(device, startTime, endTime, acsEventLastIndex, 20);
-                                        acsEventTasks.Add(task);
-
-                                        if (acsEventTasks.Count >= 1) // Process in batches
+                                        int authDateTimeFormat = 0;
+                                        int authDateFormat = 0;
+                                        int authTimeFormat = 0;
+                                        //  WriteLogToFile($"dbCOnection");
+                                        IDbConnection? dbConnection = null;
+                                        var config = await context.ClientDBDetailRepository.FirstOrDefaultAsync(c => c.IsConnectionActive == true);
+                                        string insertQuery = "";
+                                        Dictionary<string, int> dbTypes = null;
+                                        if (config != null && config.UseClientDb)
                                         {
-                                            var completedTasks = await Task.WhenAll(acsEventTasks);
-                                            acsEventTasks.Clear();
-
-                                            foreach (var result in completedTasks)
+                                            dbConnection = await _dbContextFactory.CreateDbContextAsync(config == null ? "Default" : config.DatabaseType.ToString());
+                                            dbConnection.Open();
+                                            //  WriteLogToFile($"config");
+                                            var (query, databaseTypes) = await GenerateInsertQuery(config, _dbContextFactory);
+                                            insertQuery = query;
+                                            dbTypes = databaseTypes;
+                                        }
+                                        foreach (var item in acsEventInfo)
+                                        {
+                                            //  WriteLogToFile($"check employee No Null");
+                                            if (!string.IsNullOrEmpty(item.EmployeeNo))
                                             {
-                                                if (result?.AcsEvent != null && result.AcsEvent.InfoList.Any())
+                                                if (string.IsNullOrEmpty(insertQuery))
                                                 {
-                                                    acsEventInfo.AddRange(result.AcsEvent.InfoList);
-                                                    acsEventLastIndex += result.AcsEvent.InfoList.Count;
+                                                    var personByEmployeeNo = await context.PersonRepository.FirstOrDefaultAsync(x => x.PersonNumber == item.EmployeeNo);
+                                                    var tabAttendance = await context.AttendanceRepository.FirstOrDefaultAsync(i =>
+                                                i.PersonId == personByEmployeeNo.Oid && i.AuthenticationDateAndTime == item.EventTime.DateTime);
+
+                                                    if (tabAttendance == null)
+                                                    {
+
+                                                        Attendance accessControllEvent = new Attendance()
+                                                        {
+                                                            CardNo = item.CardReaderNo.ToString(),
+                                                            PersonId = personByEmployeeNo.Oid,
+                                                            AuthenticationDateAndTime = item.EventTime.DateTime,
+                                                            AuthenticationDate = item.EventTime.DateTime,
+                                                            AuthenticationTime = item.EventTime.TimeOfDay,
+                                                            Direction = null,
+                                                            DeviceName = device.DeviceName,
+                                                            DeviceSerialNo = device.DeviceIP,
+                                                        };
+                                                        var added = context.AttendanceRepository.Add(accessControllEvent);
+
+                                                        await context.SaveChangesAsync();
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    try
+                                                    {
+                                                        // WriteLogToFile("Inserting in to Client DB");
+
+                                                        authDateTimeFormat = dbTypes.ContainsKey("AuthenticationDateTime") && dbTypes["AuthenticationDateTime"] != 0
+                                                            ? dbTypes["AuthenticationDateTime"]
+                                                            : 0;
+
+                                                        authDateFormat = dbTypes.ContainsKey("AuthenticationDate") && dbTypes["AuthenticationDate"] != 0
+                                                            ? dbTypes["AuthenticationDate"]
+                                                            : 0;
+
+                                                        authTimeFormat = dbTypes.ContainsKey("AuthenticationTime") && dbTypes["AuthenticationTime"] != 0
+                                                            ? dbTypes["AuthenticationTime"]
+                                                        : 0;
+
+                                                        var person = context.PersonRepository.GetAll().FirstOrDefault(x => x.PersonNumber == item.EmployeeNo && x.IsDeleted == false);
+                                                        string duplicateCheckQuery = await GenerateSelectDuplicateQuery(config, _dbContextFactory);
+                                                        // var deviceFromDb = unitOfWork.AccessControllDeviceRepository.FirstOrDefault(x => x.IP == dto.ipAddress && x.IsRowDeleted == false);
+                                                        int checkRecord = 0;
+                                                        try
+                                                        {
+                                                            checkRecord = await dbConnection.QueryFirstAsync<int>(duplicateCheckQuery);
+                                                        }
+                                                        catch
+                                                        {
+
+                                                        }
+                                                        if (checkRecord == 0)
+                                                        {
+                                                            var rowsAffected = await dbConnection.ExecuteAsync(insertQuery, new
+                                                            {
+                                                                EmployeeId = item.EmployeeNo,
+                                                                AuthenticationDateTime = item.EventTime.UtcDateTime, //DateTimeOffset.Parse(dto.EventTime).ToOffset(TimeSpan.FromHours(6)).DateTime,
+                                                                                                                     // AuthenticationDateTime = DBMappingDateTimeConverter.ConvertDateTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateTimeFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
+                                                                AuthenticationDate = item.EventTime.UtcDateTime.Date,
+                                                                //AuthenticationDate = Convert.ToDateTime(dto.dateTime).Date, // DBMappingDateTimeConverter.ConvertDateFormat(Convert.ToDateTime(dto.dateTime), authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
+                                                                AuthenticationTime = item.EventTime.UtcDateTime.TimeOfDay, //DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).TimeOfDay,
+                                                                                                                           // AuthenticationTime = DBMappingDateTimeConverter.ConvertTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
+                                                                DeviceName = device.DeviceName,// dto?.Name ?? dto.AccessControllerEvent.deviceName,
+                                                                DeviceSerialNo = device.SerialNumber,
+                                                                PersonName = person == null ? "No Person Found" : (person.FirstName + ' ' + person.Surname),
+                                                                CardNo = item.CardNo,// dto.AccessControllerEvent.GetFormattedCardNo(),
+                                                                DepartmentName = "No Department Found",
+                                                                FirstName = person?.FirstName ?? "No First Name Found",
+                                                                LastName = person?.Surname ?? "No Last Name Found"
+                                                            });
+                                                        }
+                                                    }
+                                                    catch (Exception ex)
+                                                    {
+                                                        //                                                  WriteLogToFile($"Exception  : {ex.Message}");
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                     catch (Exception ex)
                                     {
-                                        //_logger.LogError(ex, "Error fetching ACS events for device {DeviceId} on {StartTime}",
-                                        //    device.DeviceID, startTime);
+                                        //                                    WriteLogToFile($"Exception  : {ex.Message}");
                                     }
-                                }
-
-                                try
-                                {
-                                    int authDateTimeFormat = 0;
-                                    int authDateFormat = 0;
-                                    int authTimeFormat = 0;
-                                    //  WriteLogToFile($"dbCOnection");
-                                    IDbConnection? dbConnection = null;
-                                    var config = await context.ClientDBDetailRepository.FirstOrDefaultAsync(c => c.IsConnectionActive == true);
-                                    dbConnection = await _dbContextFactory.CreateDbContextAsync(config == null ? "Default" : config.DatabaseType.ToString());
-                                    dbConnection.Open();
-                                    //  WriteLogToFile($"config");
-                                    var (insertQuery, dbTypes) = await GenerateInsertQuery(config, _dbContextFactory);
-                                    foreach (var item in acsEventInfo)
-                                    {
-                                        //  WriteLogToFile($"check employee No Null");
-                                        if (!string.IsNullOrEmpty(item.EmployeeNo))
-                                        {
-                                            if (string.IsNullOrEmpty(insertQuery))
-                                            {
-                                                var personByEmployeeNo = await context.PersonRepository.FirstOrDefaultAsync(x => x.PersonNumber == item.EmployeeNo);
-                                                var tabAttendance = await context.AttendanceRepository.FirstOrDefaultAsync(i =>
-                                            i.PersonId == personByEmployeeNo.Oid && i.AuthenticationDateAndTime == item.EventTime.DateTime);
-
-                                                if (tabAttendance == null)
-                                                {
-
-                                                    Attendance accessControllEvent = new Attendance()
-                                                    {
-                                                        CardNo = item.CardReaderNo.ToString(),
-                                                        PersonId = personByEmployeeNo.Oid,
-                                                        AuthenticationDateAndTime = item.EventTime.DateTime,
-                                                        AuthenticationDate = item.EventTime.DateTime,
-                                                        AuthenticationTime = item.EventTime.TimeOfDay,
-                                                        Direction = null,
-                                                        DeviceName = device.DeviceName,
-                                                        DeviceSerialNo = device.DeviceIP,
-                                                    };
-                                                    var added = context.AttendanceRepository.Add(accessControllEvent);
-
-                                                    await context.SaveChangesAsync();
-                                                }
-                                            }
-                                            else
-                                            {
-                                                try
-                                                {
-                                                    // WriteLogToFile("Inserting in to Client DB");
-
-                                                    authDateTimeFormat = dbTypes.ContainsKey("AuthenticationDateTime") && dbTypes["AuthenticationDateTime"] != 0
-                                                        ? dbTypes["AuthenticationDateTime"]
-                                                        : 0;
-
-                                                    authDateFormat = dbTypes.ContainsKey("AuthenticationDate") && dbTypes["AuthenticationDate"] != 0
-                                                        ? dbTypes["AuthenticationDate"]
-                                                        : 0;
-
-                                                    authTimeFormat = dbTypes.ContainsKey("AuthenticationTime") && dbTypes["AuthenticationTime"] != 0
-                                                        ? dbTypes["AuthenticationTime"]
-                                                    : 0;
-
-                                                    var person = context.PersonRepository.GetAll().FirstOrDefault(x => x.PersonNumber == item.EmployeeNo && x.IsDeleted == false);
-
-                                                    // var deviceFromDb = unitOfWork.AccessControllDeviceRepository.FirstOrDefault(x => x.IP == dto.ipAddress && x.IsRowDeleted == false);
-
-                                                    var rowsAffected = await dbConnection.ExecuteAsync(insertQuery, new
-                                                    {
-                                                        EmployeeId = item.EmployeeNo,
-                                                        AuthenticationDateTime = item.EventTime.UtcDateTime, //DateTimeOffset.Parse(dto.EventTime).ToOffset(TimeSpan.FromHours(6)).DateTime,
-                                                                                                             // AuthenticationDateTime = DBMappingDateTimeConverter.ConvertDateTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateTimeFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
-                                                        AuthenticationDate = item.EventTime.UtcDateTime.Date,
-                                                        //AuthenticationDate = Convert.ToDateTime(dto.dateTime).Date, // DBMappingDateTimeConverter.ConvertDateFormat(Convert.ToDateTime(dto.dateTime), authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
-                                                        AuthenticationTime = item.EventTime.UtcDateTime.TimeOfDay, //DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).TimeOfDay,
-                                                                                                                   // AuthenticationTime = DBMappingDateTimeConverter.ConvertTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
-                                                        DeviceName = device.DeviceName,// dto?.Name ?? dto.AccessControllerEvent.deviceName,
-                                                        DeviceSerialNo = device.SerialNumber,
-                                                        PersonName = person == null ? "No Person Found" : (person.FirstName + ' ' + person.Surname),
-                                                        CardNo = item.CardNo,// dto.AccessControllerEvent.GetFormattedCardNo(),
-                                                        DepartmentName = "No Department Found",
-                                                        FirstName = person?.FirstName ?? "No First Name Found",
-                                                        LastName = person?.Surname ?? "No Last Name Found"
-                                                    });
-
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                    //                                                  WriteLogToFile($"Exception  : {ex.Message}");
-                                                }
-                                            }
-                                        }
-                                    }
+                                    // Move to the next day
+                                    startTime = startTime.AddDays(1);
+                                    endTime = startTime.AddDays(1);
                                 }
                                 catch (Exception ex)
                                 {
-                                    //                                    WriteLogToFile($"Exception  : {ex.Message}");
+                                    //WriteLogToFile($"Exception  : {ex.Message}");
+                                    //_logger.LogError(ex, "Error processing ACS events for Device {DeviceId} from {StartTime} to {EndTime}",
+                                    //    device.DeviceID, startTime, endTime);
                                 }
-                                // Move to the next day
-                                startTime = startTime.AddDays(1);
-                                endTime = startTime.AddDays(1);
                             }
-                            catch (Exception ex)
-                            {
-                                //WriteLogToFile($"Exception  : {ex.Message}");
-                                //_logger.LogError(ex, "Error processing ACS events for Device {DeviceId} from {StartTime} to {EndTime}",
-                                //    device.DeviceID, startTime, endTime);
-                            }
+                            #endregion
+
+
                         }
-                        #endregion
-
-
                     }
+                    #endregion
+
+
+
+
+                    await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
                 }
-                #endregion
-
-
-
-
-                await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
-
+                catch (Exception ex)
+                {
+                    WriteLogToFile($"Exception in DataExchange:{ex.Message} ");
+                }
             }
 
 
@@ -334,6 +360,64 @@ namespace Api.BackGroundServices
                         dbConnection.Close();
                     }
                 }
+            }
+        }
+        private async Task<string?> GenerateSelectDuplicateQuery(ClientDBDetail clientDBDetail, DynamicDbContextFactory dynamicDbContextFactory)
+        {
+            if (clientDBDetail == null)
+                return null;
+
+            var fieldMappings = await GetClientFieldMappings(dynamicDbContextFactory, clientDBDetail.Oid);
+            if (fieldMappings == null || !fieldMappings.Any())
+                return null;
+
+            var duplicateCheckFields = new[] { "EmployeeId", "AuthenticationDateAndTime" };
+
+            var validMappings = fieldMappings.Values
+                .Where(f => !string.IsNullOrEmpty(f.ClientField) && duplicateCheckFields.Contains(f.StandardField))
+                .ToList();
+
+            if (!validMappings.Any())
+                return null;
+
+            var tableName = validMappings.First().TableName ?? "TabEmployeeAttendances";
+
+            string parameterPrefix = clientDBDetail.DatabaseType switch
+            {
+                DatabaseType.MySQL => "?",
+                DatabaseType.Oracle => ":",
+                _ => "@" // SQL Server, PostgreSQL.
+            };
+
+            var whereClause = string.Join(" AND ", validMappings.Select(f =>
+                $"{f.ClientField} = {parameterPrefix}{f.StandardField}"));
+
+            var selectQuery = $@"SELECT COUNT(*) FROM {tableName} WHERE {whereClause}";
+
+            return selectQuery;
+        }
+        private void WriteLogToFile(string message)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_logDirectory))
+                    return;
+
+                string logFileName = $"Log_{DateTime.Now:yyyy-MM-dd}.txt";
+                string fullLogPath = Path.Combine(_logDirectory, logFileName);
+
+                // Ensure the directory exists
+                if (!Directory.Exists(_logDirectory))
+                {
+                    Directory.CreateDirectory(_logDirectory);
+                }
+
+                string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}{Environment.NewLine}";
+                File.AppendAllText(fullLogPath, logEntry);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to write log to file");
             }
         }
 

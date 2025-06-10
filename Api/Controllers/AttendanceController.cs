@@ -9,6 +9,13 @@ using Domain.Entities;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using ClosedXML.Excel;
 using Infrastructure;
+using System.Data;
+using Microsoft.EntityFrameworkCore.Internal;
+using Infrastructure.Helper;
+using Dapper;
+using DocumentFormat.OpenXml.Wordprocessing;
+using DocumentFormat.OpenXml.Bibliography;
+using System.Drawing.Printing;
 
 namespace Api.Controllers
 {
@@ -20,17 +27,18 @@ namespace Api.Controllers
         private readonly IUnitOfWork context;
         private readonly ILogger<AttendanceController> logger;
         private readonly IConfiguration _configuration;
-
+        private readonly DynamicDbContextFactory dbContextFactory;
         /// <summary>
         /// Default constructor.
         /// </summary>
         /// <param name="context">Instance of the UnitOfWork.</param>
 
-        public AttendanceController(IUnitOfWork context, ILogger<AttendanceController> logger, IConfiguration configuration)
+        public AttendanceController(IUnitOfWork context, ILogger<AttendanceController> logger, IConfiguration configuration, DynamicDbContextFactory dbContextFactory)
         {
             this.context = context;
             this.logger = logger;
             _configuration = configuration;
+            this.dbContextFactory = dbContextFactory;
         }
         /// <summary>
         /// URL: api/attendance/person-attendances
@@ -45,12 +53,120 @@ namespace Api.Controllers
             {
                 if (personAttendanceFilterDto.PageSize == 0)
                 {
+
+                    personAttendanceFilterDto.Page = ((personAttendanceFilterDto.Page - 1) * (personAttendanceFilterDto.PageSize));
+
+                    var config = await context.ClientDBDetailRepository.FirstOrDefaultAsync(x => x.IsConnectionActive == true && x.UseClientDb == true);
+                    if (config != null)
+                    {
+                        return BadRequest("PageSize and Page Number is manditory when we are fetching record from client Database");
+                    }
+
                     var attendances = await context.AttendanceRepository.GetPersonAttendances();
 
                     return Ok(attendances);
                 }
                 else
                 {
+                    var config = await context.ClientDBDetailRepository.FirstOrDefaultAsync(x => x.IsConnectionActive == true && x.UseClientDb == true);
+                    if (config != null)
+                    {
+                        personAttendanceFilterDto.Page = ((personAttendanceFilterDto.Page - 1) * (personAttendanceFilterDto.PageSize));
+
+                        IDbConnection? dbConnection = null;
+
+                        dbConnection = await dbContextFactory.CreateDbContextAsync(config == null ? "Default" : config.DatabaseType.ToString());
+
+                        dbConnection.Open();
+
+                        string query = "";
+                        dbConnection = await dbContextFactory.CreateDbContextAsync(config.DatabaseType.ToString());
+                        dbConnection.Open();
+                        // Retrieve the table name dynamically from ClientFieldMappings
+                        var fieldMappings = await context.ClientFieldMappingRepository.FirstOrDefaultAsync(c => c.IsDeleted != null && c.IsDeleted == false);
+                        string tableName = fieldMappings?.TableName ?? "TabEmployeeAttendances";
+
+                        int totalRecords = 0;
+
+                        // Handle different database types
+                        if (config != null && config.IsConnectionActive == true)
+                        {
+                            switch (config.DatabaseType)
+                            {
+                                case Enums.DatabaseType.CustomSQLServer:
+                                    query = $"SELECT COUNT(*) FROM {tableName}";
+                                    totalRecords = await dbConnection.ExecuteScalarAsync<int>(query);
+
+                                    query = $@"SELECT * FROM {tableName} 
+                                        ORDER BY dtPunchDate DESC
+                                        OFFSET 
+                                    
+                                    {(personAttendanceFilterDto.Page - 1) * personAttendanceFilterDto.PageSize} ROWS FETCH NEXT {personAttendanceFilterDto.PageSize} ROWS ONLY";
+                                    break;
+
+                                case Enums.DatabaseType.SQLServer:
+                                    query = $"SELECT COUNT(*) FROM {tableName}";
+                                    totalRecords = await dbConnection.ExecuteScalarAsync<int>(query);
+
+                                    query = $@"SELECT * FROM {tableName} 
+                                        ORDER BY AuthenticationDateAndTime DESC
+                                        OFFSET 
+                                    
+                                    {(personAttendanceFilterDto.Page - 1) * personAttendanceFilterDto.PageSize} ROWS FETCH NEXT {personAttendanceFilterDto.PageSize} ROWS ONLY";
+                                    break;
+
+                                case Enums.DatabaseType.PostgreSQL:
+                                case Enums.DatabaseType.MySQL:
+                                    query = $"SELECT COUNT(*) FROM {tableName}";
+                                    totalRecords = await dbConnection.ExecuteScalarAsync<int>(query);
+                                    query = $@"SELECT * FROM {tableName} 
+                                        ORDER BY AuthenticationDateAndTime DESC
+                                        LIMIT 
+                                    {personAttendanceFilterDto.Page} OFFSET {(personAttendanceFilterDto.Page - 1) * personAttendanceFilterDto.PageSize}";
+                                    break;
+
+                                case Enums.DatabaseType.Oracle:
+                                    query = $"SELECT COUNT(*) FROM {tableName}";
+                                    totalRecords = await dbConnection.ExecuteScalarAsync<int>(query);
+
+                                    query = $@"SELECT * FROM (
+                                                        SELECT T.*, ROWNUM RNUM 
+                                                        FROM 
+                                    
+                                    
+                                    
+                                    {tableName} T 
+                                                        WHERE ROWNUM <= {(personAttendanceFilterDto.Page - 1) * personAttendanceFilterDto.PageSize + personAttendanceFilterDto.PageSize}
+                                                      ) 
+                                                        WHERE RNUM > {(personAttendanceFilterDto.Page - 1) * personAttendanceFilterDto.PageSize}
+                                                        ORDER BY AuthenticationDate DESC";
+                                    break;
+
+                                default:
+                                    query = $"SELECT COUNT(*) FROM {tableName}";
+                                    totalRecords = await dbConnection.ExecuteScalarAsync<int>(query);
+                                    query = $@"SELECT * FROM {tableName} 
+                                                ORDER BY AuthenticationDateAndTime DESC
+                                                OFFSET 
+                                    {(personAttendanceFilterDto.Page - 1) * personAttendanceFilterDto.PageSize} ROWS FETCH NEXT {personAttendanceFilterDto.PageSize} ROWS ONLY";
+
+                                    break;
+                            }
+
+                            var rowsAffected = await dbConnection.QueryAsync<object>(query);
+                            PagedResultDto<object> accessLevelsRecord = new PagedResultDto<object>()
+                            {
+                                Data = rowsAffected.ToList(),
+                                PageNumber = personAttendanceFilterDto.Page,
+                                PageSize = personAttendanceFilterDto.PageSize,
+                                TotalPages = (int)Math.Ceiling(totalRecords / (double)personAttendanceFilterDto.PageSize),
+                                TotalItems = totalRecords
+                            };
+                            return Ok(accessLevelsRecord);
+                        }
+
+
+                    }
                     int currentPage = personAttendanceFilterDto.Page;
                     personAttendanceFilterDto.Page = ((personAttendanceFilterDto.Page - 1) * (personAttendanceFilterDto.PageSize));
                     var accessLevels = await context.AttendanceRepository.GetPersonAttendances(personAttendanceFilterDto);
@@ -231,13 +347,13 @@ namespace Api.Controllers
             try
             {
                 var visitorAttendances = await context.VisitorLogRepository.GetVisitorAttendancesBetweenDates(attendanceDeleteDto.FromDate, attendanceDeleteDto.ToDate);
-          
+
                 if (visitorAttendances == null || visitorAttendances.Count() == 0)
                     return StatusCode(StatusCodes.Status404NotFound);
-                
+
                 var attendances = visitorAttendances.ToList();
 
-           
+
 
                 // Generate Excel in memory
                 using var workbook = new XLWorkbook();

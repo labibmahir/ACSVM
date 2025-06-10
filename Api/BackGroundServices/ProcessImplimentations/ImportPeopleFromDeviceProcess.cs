@@ -24,8 +24,8 @@ namespace Api.BackGroundServices.ProcessImplimentations
         public Device Device { get; set; }
         public List<ErrorMessage> Errors { get; set; } = new List<ErrorMessage>();
         public ProcessPriority ProcessPriority { get; private set; }
-
-        public ImportPeopleFromDeviceProcess(Device device, ProcessPriority processPriority = ProcessPriority.Normal)
+        private readonly string? _logDirectory;
+        public ImportPeopleFromDeviceProcess(IConfiguration configuration, Device device, ProcessPriority processPriority = ProcessPriority.Normal)
         {
             ProcessId = Guid.NewGuid().ToString();
             ProcessType = ProcessType.ImportingPeopleFromDevice;
@@ -35,12 +35,14 @@ namespace Api.BackGroundServices.ProcessImplimentations
             ProcessPriority = processPriority;
             this.ProcessName = $"Importing People from device: '{this.Device.DeviceName}'";
             this.ProcessDescription = "Waiting...";
+            _logDirectory = configuration["ServiceLogFilePath:FileLogPath"];
         }
 
         public async Task Execute(ILogger<ImportPeopleFromDeviceProcess> logger, IUnitOfWork context, IHikVisionMachineService _visionMachineService)
         {
             try
             {
+                WriteLogToFile("Import People From Device Process");
                 this.ProcessState = ProcessState.Running;
                 //FileLogger.Log($"{this.ProcessState} = {ProcessState.Running}");
                 int count = await _visionMachineService.GetUserCount(this.Device);
@@ -360,11 +362,34 @@ namespace Api.BackGroundServices.ProcessImplimentations
             catch (Exception ex)
             {
                 logger.LogError(ex.Message);
+                WriteLogToFile($"Exception in ImportPeople from Device Process:{ex.Message} ");
                 //     FileLogger.Log($"Exception : {ex.Message}");
                 this.ProcessState = ProcessState.Failed;
             }
         }
+        private void WriteLogToFile(string message)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_logDirectory))
+                    return;
 
+                string logFileName = $"Log_{DateTime.Now:yyyy-MM-dd}.txt";
+                string fullLogPath = Path.Combine(_logDirectory, logFileName);
+
+                // Ensure the directory exists
+                if (!Directory.Exists(_logDirectory))
+                {
+                    Directory.CreateDirectory(_logDirectory);
+                }
+
+                string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}{Environment.NewLine}";
+                File.AppendAllText(fullLogPath, logEntry);
+            }
+            catch (Exception ex)
+            {
+            }
+        }
         public ProcessDto ToProcessDto()
         {
             ProcessDto dto = new ProcessDto();

@@ -494,12 +494,12 @@ namespace Api.Controllers
         }
 
         /// <summary>
-        /// URL: api/person-omport-from-excel
+        /// URL: api/person-import-from-excel-or-csv
         /// </summary>
         /// <param name="person">person object.</param>
         /// <returns>Http status code: Ok.</returns>
         [HttpPost]
-        [Route(RouteConstants.CreatePersonFromExcel)]
+        [Route(RouteConstants.CreatePersonFromExcelOrCSV)]
         public async Task<ActionResult<Person>> CreatePersonFromExcel(IFormFile file)
         {
             try
@@ -507,16 +507,41 @@ namespace Api.Controllers
                 if (file == null || file.Length == 0)
                     return BadRequest("Excel file is required.");
 
+                var extension = Path.GetExtension(file.FileName).ToLower();
+
+               
+
                 using var stream = new MemoryStream();
                 await file.CopyToAsync(stream);
                 stream.Position = 0;
+                PersonExcelImportResult personExcelImportResult = new PersonExcelImportResult();
 
-                var persons = ExcelHelper.ReadPersonsFromExcel(stream);
-                if (persons.ValidationErrors != null && persons.ValidationErrors.Count() > 0)
+                if (extension != ".csv" && extension != ".xls" && extension != ".xlsx")
                 {
-                    return BadRequest(persons);
+                    return BadRequest("Only CSV or Excel files (.csv, .xls, .xlsx) are allowed.");
                 }
-                foreach (var personDto in persons.Persons)
+
+                if (extension == ".csv")
+                {
+                     personExcelImportResult = ExcelHelper.ReadPersonsFromCsv(stream);
+                    // proceed with CSV handling
+                }
+                else if (extension == ".xls" || extension == ".xlsx")
+                {
+                     personExcelImportResult = ExcelHelper.ReadPersonsFromExcel(stream);
+                    // proceed with Excel handling
+                }
+                else
+                {
+                    return BadRequest("Unsupported file format. Only CSV, XLS, and XLSX are supported.");
+                }
+
+                //var persons = ExcelHelper.ReadPersonsFromExcel(stream);
+                if (personExcelImportResult.ValidationErrors != null && personExcelImportResult.ValidationErrors.Count() > 0)
+                {
+                    return BadRequest(personExcelImportResult);
+                }
+                foreach (var personDto in personExcelImportResult.Persons)
                 {
                     if ((personDto.AccessLevelIds == null || personDto.AccessLevelIds.Length == 0) && (personDto.DeviceIdList == null || personDto.DeviceIdList.Length == 0))
                         return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
@@ -659,13 +684,16 @@ namespace Api.Controllers
                     context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
                     await context.SaveChangesAsync();
                 }
-                return Ok(persons);
+                return Ok(personExcelImportResult);
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
             }
         }
+       
+        
+
         /// <summary>
         /// URL: api/person/{key}
         /// </summary>
@@ -795,7 +823,7 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.SelectedDeviceNotActive);
                 }
 
-                IProcess importPeople = new ImportPeopleFromDeviceProcess(device, ProcessPriority.Urgent);
+                IProcess importPeople = new ImportPeopleFromDeviceProcess(_configuration, device, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
                 return Ok(importPeople.ToProcessDto());
             }
@@ -831,7 +859,7 @@ namespace Api.Controllers
                     return StatusCode(StatusCodes.Status404NotFound, MessageConstants.SelectedDeviceNotActive);
                 }
 
-                IProcess importPeople = new ExportPeopleToDeviceProcess(exportToDeviceDto, ProcessPriority.Urgent);
+                IProcess importPeople = new ExportPeopleToDeviceProcess(_configuration,exportToDeviceDto, ProcessPriority.Urgent);
                 await progressManager.AddProcess(importPeople);
                 return Ok(exportToDeviceDto);
             }

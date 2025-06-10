@@ -24,7 +24,8 @@ namespace Api.BackGroundServices.ProcessImplimentations
         public DeviceSynchronizer deviceSynchronizer { get; set; }
         public List<ErrorMessage> Errors { get; set; } = new List<ErrorMessage>();
         public ProcessPriority ProcessPriority { get; private set; }
-        public DeviceActionProcess(DeviceSynchronizer deviceSynchronizer, ProcessPriority processPriority = ProcessPriority.Normal)
+        private readonly string? _logDirectory;
+        public DeviceActionProcess(IConfiguration configuration, DeviceSynchronizer deviceSynchronizer, ProcessPriority processPriority = ProcessPriority.Normal)
         {
             ProcessId = Guid.NewGuid().ToString();
             ProcessType = ProcessType.DeviceAction;
@@ -35,6 +36,7 @@ namespace Api.BackGroundServices.ProcessImplimentations
             ProcessPriority = processPriority;
             this.ProcessName = $"Export People to device Id: '{this.deviceSynchronizer.Oid}'";
             this.ProcessDescription = "Waiting...";
+            _logDirectory = configuration["ServiceLogFilePath:FileLogPath"];
         }
         public async Task Execute(ILogger<DeviceActionProcess> logger, IUnitOfWork context, IHikVisionMachineService _visionMachineService)
         {
@@ -43,6 +45,7 @@ namespace Api.BackGroundServices.ProcessImplimentations
                 this.ProcessState = ProcessState.Running;
                 if (deviceSynchronizer.VisitorId != null)
                 {
+                    WriteLogToFile("Device Action Process started after Appointment Create Or Update");
                     var visitor = await context.VisitorRepository.GetVisitorByKey(deviceSynchronizer.VisitorId.Value);
                     if (visitor != null)
                     {
@@ -188,7 +191,7 @@ namespace Api.BackGroundServices.ProcessImplimentations
                                             context.IdentifiedSyncDeviceRepository.Update(synDevice);
                                         }
                                     }
-                                        await context.SaveChangesAsync();
+                                    await context.SaveChangesAsync();
                                 }
                                 else
                                 {
@@ -220,12 +223,34 @@ namespace Api.BackGroundServices.ProcessImplimentations
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.Message);
+                WriteLogToFile($"Exception in Device Action Process:{ex.Message} ");
                 //     FileLogger.Log($"Exception : {ex.Message}");
                 this.ProcessState = ProcessState.Failed;
             }
         }
+        private void WriteLogToFile(string message)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_logDirectory))
+                    return;
 
+                string logFileName = $"Log_{DateTime.Now:yyyy-MM-dd}.txt";
+                string fullLogPath = Path.Combine(_logDirectory, logFileName);
+
+                // Ensure the directory exists
+                if (!Directory.Exists(_logDirectory))
+                {
+                    Directory.CreateDirectory(_logDirectory);
+                }
+
+                string logEntry = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} - {message}{Environment.NewLine}";
+                File.AppendAllText(fullLogPath, logEntry);
+            }
+            catch (Exception ex)
+            {
+            }
+        }
         public ProcessDto ToProcessDto()
         {
             ProcessDto dto = new ProcessDto();
