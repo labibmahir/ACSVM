@@ -145,6 +145,61 @@ namespace Api.Controllers
             }
         }
 
+
+        /// <summary>
+        /// URL:api/assigned-devices-by-person/{personId}
+        /// </summary>
+        /// <returns>A list of devices.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadAssignedDevicesByPerson)]
+        public async Task<IActionResult> ReadAssignedDevicesByPerson(Guid personId)
+        {
+            try
+            {
+                if (personId == Guid.Empty)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
+
+
+                var assignedDevicesByPerson = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByPerson(personId);
+                List<Device> devices = new List<Device>();
+                if (assignedDevicesByPerson != null && assignedDevicesByPerson.Any())
+                {
+                    devices = assignedDevicesByPerson.Select(x => x.Device).ToList();
+                }
+
+                return Ok(devices);
+
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
+        /// URL:api/unassigned-devices-by-person/{personId}
+        /// </summary>
+        /// <returns>A list of devices.</returns>
+        [HttpGet]
+        [Route(RouteConstants.ReadUnAssignedDevicesByPerson)]
+        public async Task<IActionResult> ReadUnAssignedDevicesByPerson(Guid personId)
+        {
+            try
+            {
+                if (personId == Guid.Empty)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidParameterError);
+
+
+                var unAssignedDevicesByPerson = await context.IdentifiedAssignDeviceRepository.GetUnAssignDeviceByPerson(personId);
+
+                return Ok(unAssignedDevicesByPerson);
+
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
         /// <summary>
         /// URL: api/device/{key}
         /// </summary>

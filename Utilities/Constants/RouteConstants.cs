@@ -36,6 +36,8 @@ namespace Utilities.Constants
         public const string CreateDevice = "device";
 
         public const string ReadDevices = "devices";
+        public const string ReadAssignedDevicesByPerson = "assigned-devices-by-person/{personId}";
+        public const string ReadUnAssignedDevicesByPerson = "unassigned-devices-by-person/{personId}";
 
         public const string ReadDeviceByKey = "device/key/{key}";
 
@@ -62,6 +64,8 @@ namespace Utilities.Constants
         #region Person
         public const string CreatePerson = "person";
         public const string CreatePersonFromExcelOrCSV = "person-import-from-excel-or-csv";
+        public const string AssignedDeviceToPerson = "assign-device-to-person";
+        public const string UnAssignedDeviceToPerson = "unassign-device-to-person";
 
         public const string ReadPersons = "persons";
         public const string ReadPersonsMinifiedData = "persons-minified-data";
@@ -85,6 +89,8 @@ namespace Utilities.Constants
         public const string ReadVisitorByPhone = "visitor/phone-number/{phoneNo}";
 
         public const string UpdateVisitor = "visitor/{key}";
+        public const string AssignedDeviceToVisitor = "assigned-device-to-visitor";
+        public const string UnAssignedDeviceToVisitor = "unassigned-device-to-visitor";
 
         public const string DeleteVisitor = "visitor/{key}";
         #endregion

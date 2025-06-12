@@ -180,13 +180,30 @@ namespace Api.BackGroundServices
                                                         string duplicateCheckQuery = await GenerateSelectDuplicateQuery(config, _dbContextFactory);
                                                         // var deviceFromDb = unitOfWork.AccessControllDeviceRepository.FirstOrDefault(x => x.IP == dto.ipAddress && x.IsRowDeleted == false);
                                                         int checkRecord = 0;
+                                                        var paramValues = new DynamicParameters();
+                                                        foreach (var mapping in await GetClientFieldMappings(_dbContextFactory, config.Oid))
+                                                        {
+                                                            if (!string.IsNullOrEmpty(mapping.Value.ClientField) &&
+                                                                (mapping.Value.StandardField == "employee" || mapping.Value.StandardField == "AuthenticationDateAndTime"))
+                                                            {
+                                                                var standardField = mapping.Value.StandardField;
+                                                                object value = standardField switch
+                                                                {
+                                                                    "EmployeeNo" => item.EmployeeNo,
+                                                                    "AuthenticationDateAndTime" => item.EventTime.UtcDateTime,
+                                                                    _ => null
+                                                                };
+
+                                                                paramValues.Add(standardField, value);
+                                                            }
+                                                        }
                                                         try
                                                         {
-                                                            checkRecord = await dbConnection.QueryFirstAsync<int>(duplicateCheckQuery);
+                                                            checkRecord = await dbConnection.QueryFirstAsync<int>(duplicateCheckQuery, paramValues);
                                                         }
-                                                        catch
+                                                        catch (Exception ex)
                                                         {
-
+                                                            // Log ex.Message
                                                         }
                                                         if (checkRecord == 0)
                                                         {
@@ -336,11 +353,6 @@ namespace Api.BackGroundServices
 
                 var s = unitOfWork.ClientFieldMappingRepository.GetAll().Where(x => x.ClientDBDetailId == clientDBDetailId);
 
-                // dbConnection = await _dbContextFactory.CreateDbContextAsync("Default");
-
-                string query = @"SELECT * FROM ClientFieldMappings 
-                      WHERE ClientDBDetailId = @ClientDBDetailId";
-
                 try
                 {
                     var mappings = unitOfWork.ClientFieldMappingRepository.GetAll().Where(x => x.ClientDBDetailId == clientDBDetailId);
@@ -371,11 +383,12 @@ namespace Api.BackGroundServices
             if (fieldMappings == null || !fieldMappings.Any())
                 return null;
 
-            var duplicateCheckFields = new[] { "EmployeeId", "AuthenticationDateAndTime" };
+            var duplicateCheckFields = new[] { "EmployeeNo", "AuthenticationDateTime" };
 
             var validMappings = fieldMappings.Values
                 .Where(f => !string.IsNullOrEmpty(f.ClientField) && duplicateCheckFields.Contains(f.StandardField))
                 .ToList();
+
 
             if (!validMappings.Any())
                 return null;

@@ -26,6 +26,7 @@ namespace Utilities.Constants
         public const string DeviceNameTaken = "Device Name already exists!";
         public const string PersonNumberTaken = "Person Number already exists!";
         public const string PersonNotFound = "Person Not does not exists!";
+        public const string VisitorNotFound = "Visitor Not does not exists!";
         public const string VisitorNumberTaken = "Visitor Number already exists!";
         public const string CardNumberTake = "Card Number already exists!";
         public const string CardNameTake = "Card Name already exists!";

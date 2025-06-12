@@ -80,6 +80,7 @@ builder.Services.AddSingleton<ICustomHttpClientBuilder, CustomHttpClientBuilder>
 builder.Services.AddSingleton<IProgressManager, ProgressManager>();
 builder.Services.AddHostedService<Syncronizer>();
 builder.Services.AddHostedService<AttendanceSyncronizer>();
+builder.Services.AddHostedService<PersonAndVisitorSyncronizer>();
 builder.Services.AddHostedService<DataExchangeSyncronizer>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options => options.AddPolicy("AllowAll", builder =>

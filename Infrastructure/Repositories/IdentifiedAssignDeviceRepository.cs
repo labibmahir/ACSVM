@@ -25,7 +25,21 @@ namespace Infrastructure.Repositories
                 throw;
             }
         }
+        public async Task<IEnumerable<Device>> GetUnAssignDeviceByPerson(Guid PersonId)
+        {
+            try
+            {
+                var assignedDeviceIds = await context.IdentifiedAssignDevices.Where(x => x.IsDeleted == false && x.PersonId == PersonId).Select(x => x.DeviceId).ToListAsync();
+                var device = await context.Devices.Where(x => x.IsDeleted == false && x.IsActive == true && !assignedDeviceIds.Contains(x.Oid)).ToListAsync();
 
+                return device;
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
         public async Task<IEnumerable<IdentifiedAssignDevice>> GetIdentifiedAssignDeviceByVisitor(Guid VisitorId)
         {
             try

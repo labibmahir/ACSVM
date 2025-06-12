@@ -8,6 +8,8 @@ using SurveillanceDevice.Integration.HIKVision;
 using Utilities.Constants;
 using System.Net.NetworkInformation;
 using Domain.Dto.PaginationFiltersDto;
+using Api.BackGroundServices.ProccessContract;
+using Api.BackGroundServices.ProcessImplimentations;
 
 namespace Api.Controllers
 {
@@ -20,17 +22,19 @@ namespace Api.Controllers
         private readonly ILogger<VisitorController> logger;
         private readonly IConfiguration _configuration;
         private readonly IHikVisionMachineService _visionMachineService;
+        private readonly IProgressManager progressManager;
         /// <summary>
         /// Default constructor.
         /// </summary>
         /// <param name="context">Instance of the UnitOfWork.</param>
 
-        public VisitorController(IUnitOfWork context, ILogger<VisitorController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService)
+        public VisitorController(IUnitOfWork context, ILogger<VisitorController> logger, IConfiguration configuration, IHikVisionMachineService visionMachineService, IProgressManager progressManager)
         {
             this.context = context;
             this.logger = logger;
             _configuration = configuration;
             _visionMachineService = visionMachineService;
+            this.progressManager = progressManager;
         }
         /// <summary>
         /// URL: api/visitor
@@ -231,7 +235,7 @@ namespace Api.Controllers
         /// <returns>Http status code: Ok.</returns>
         [HttpGet]
         [Route(RouteConstants.ReadVisitorByPhone)]
-       
+
         public async Task<IActionResult> ReadVisitorByPhone(string phoneNo)
         {
             try
@@ -472,6 +476,209 @@ namespace Api.Controllers
                 await context.SaveChangesAsync();
 
                 return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+
+
+        /// <summary>
+        /// URL: api/assign-device-to-visitor
+        /// </summary>
+        /// <param name="visitorDeviceAssignAndUnAssignDto">person object.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpPost]
+        [Route(RouteConstants.AssignedDeviceToVisitor)]
+        public async Task<ActionResult<Person>> AssignedDeviceToVisitor(VisitorDeviceAssignAndUnAssignDto visitorDeviceAssignAndUnAssignDto)
+        {
+            try
+            {
+                if (visitorDeviceAssignAndUnAssignDto.DeviceIdList == null || visitorDeviceAssignAndUnAssignDto.DeviceIdList.Length == 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
+
+                var visitor = await context.VisitorRepository.GetVisitorByKey(visitorDeviceAssignAndUnAssignDto.VisitorId);
+                if (visitor == null)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNotFound);
+
+
+                var devices = new List<Device>();
+
+                if (visitorDeviceAssignAndUnAssignDto.DeviceIdList != null && visitorDeviceAssignAndUnAssignDto.DeviceIdList.Count() > 0)
+                {
+                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(visitorDeviceAssignAndUnAssignDto.DeviceIdList);
+                    devices = devicelist.ToList();
+                }
+
+                if (devices.Count() <= 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
+
+                var assignedDevice = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(visitorDeviceAssignAndUnAssignDto.VisitorId);
+
+                List<int> assignedDevicesId = new List<int>();
+                if (assignedDevice != null && assignedDevice.Any())
+                    assignedDevicesId = assignedDevice.Select(x => x.DeviceId).ToList();
+
+                var devicesToBeAssigned = devices.Where(x => !assignedDevicesId.Contains(x.Oid)).ToList();
+
+                List<IdentifiedAssignDevice> identifiedAssignDevices = new List<IdentifiedAssignDevice>();
+                foreach (var item in devicesToBeAssigned)
+                {
+                    IdentifiedAssignDevice identifiedAssignDevice = new IdentifiedAssignDevice()
+                    {
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item.Oid,
+                        OrganizationId = visitor.OrganizationId,
+                        VisitorId = visitor.Oid,
+                        IsDeleted = false
+
+                    };
+                    identifiedAssignDevices.Add(identifiedAssignDevice);
+                }
+
+                context.IdentifiedAssignDeviceRepository.AddRange(identifiedAssignDevices);
+                await context.SaveChangesAsync();
+
+                #region DeviceSynchronizer
+                DeviceSynchronizer deviceSynchronizer = new DeviceSynchronizer()
+                {
+                    CreatedBy = GetLoggedInUserId(),
+                    DateCreated = DateTime.Now,
+                    IsDeleted = false,
+                    IsSync = false,
+                    VisitorId = visitor.Oid,
+                    OrganizationId = visitor.OrganizationId,
+                    Oid = Guid.NewGuid(),
+                };
+                context.DeviceSynchronizerRepository.Add(deviceSynchronizer);
+                List<IdentifiedSyncDevice> identifiedSyncDevices = new List<IdentifiedSyncDevice>();
+
+                foreach (var item in devices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Add,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item.Oid,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+
+                context.IdentifiedSyncDeviceRepository.AddRange(identifiedSyncDevices);
+                await context.SaveChangesAsync();
+
+                #endregion
+
+                IProcess importPeople = new DeviceActionProcess(_configuration, deviceSynchronizer, ProcessPriority.Urgent);
+                await progressManager.AddProcess(importPeople);
+                return Ok(visitor);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, MessageConstants.GenericError);
+            }
+        }
+
+        /// <summary>
+        /// URL: api/assign-device-to-visitor
+        /// </summary>
+        /// <param name="visitorDeviceAssignAndUnAssignDto">person object.</param>
+        /// <returns>Http status code: Ok.</returns>
+        [HttpPost]
+        [Route(RouteConstants.UnAssignedDeviceToVisitor)]
+        public async Task<ActionResult<Person>> UnAssignedDeviceToVisitor(VisitorDeviceAssignAndUnAssignDto visitorDeviceAssignAndUnAssignDto)
+        {
+            try
+            {
+                if (visitorDeviceAssignAndUnAssignDto.DeviceIdList == null || visitorDeviceAssignAndUnAssignDto.DeviceIdList.Length == 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.InvalidDeviceId);
+
+                var visitor = await context.VisitorRepository.GetVisitorByKey(visitorDeviceAssignAndUnAssignDto.VisitorId);
+                if (visitor == null)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.VisitorNotFound);
+
+
+                var devices = new List<Device>();
+
+                if (visitorDeviceAssignAndUnAssignDto.DeviceIdList != null && visitorDeviceAssignAndUnAssignDto.DeviceIdList.Count() > 0)
+                {
+                    var devicelist = await context.DeviceRepository.GetDevicesByDeviceIds(visitorDeviceAssignAndUnAssignDto.DeviceIdList);
+                    devices = devicelist.ToList();
+                }
+
+                if (devices.Count() <= 0)
+                    return StatusCode(StatusCodes.Status400BadRequest, MessageConstants.DeviceNotFoundAccessLevelError);
+
+                var assignedDevice = await context.IdentifiedAssignDeviceRepository.GetIdentifiedAssignDeviceByVisitor(visitorDeviceAssignAndUnAssignDto.VisitorId);
+
+                List<int> assignedDevicesId = new List<int>();
+                if (assignedDevice != null && assignedDevice.Any())
+                    assignedDevicesId = assignedDevice.Select(x => x.DeviceId).ToList();
+
+                var devicesToBeUnAssigned = devices.Where(x => assignedDevicesId.Contains(x.Oid)).ToList();
+
+                List<IdentifiedAssignDevice> identifiedAssignDevices = new List<IdentifiedAssignDevice>();
+                foreach (var item in devicesToBeUnAssigned)
+                {
+                    var identifiedAssignedDevice = await context.IdentifiedAssignDeviceRepository.FirstOrDefaultAsync(x => x.VisitorId == visitor.Oid && x.DeviceId == item.Oid);
+
+                    identifiedAssignedDevice.IsDeleted = true;
+                    context.IdentifiedAssignDeviceRepository.Update(identifiedAssignedDevice);
+
+                }
+
+                await context.SaveChangesAsync();
+
+                #region DeviceSynchronizer
+                DeviceSynchronizer deviceSynchronizer = new DeviceSynchronizer()
+                {
+                    CreatedBy = GetLoggedInUserId(),
+                    DateCreated = DateTime.Now,
+                    IsDeleted = false,
+                    IsSync = false,
+                    VisitorId = visitor.Oid,
+                    OrganizationId = visitor.OrganizationId,
+                    Oid = Guid.NewGuid(),
+                };
+                context.DeviceSynchronizerRepository.Add(deviceSynchronizer);
+                List<IdentifiedSyncDevice> identifiedSyncDevices = new List<IdentifiedSyncDevice>();
+
+                foreach (var item in devices)
+                {
+                    IdentifiedSyncDevice identifiedSyncDevice = new IdentifiedSyncDevice()
+                    {
+                        Oid = Guid.NewGuid(),
+                        Action = Utilities.Constants.Enums.DeviceAction.Delete,
+                        CreatedBy = GetLoggedInUserId(),
+                        DateCreated = DateTime.Now,
+                        DeviceId = item.Oid,
+                        DeviceSynchronizerId = deviceSynchronizer.Oid,
+                        IsDeleted = false,
+                        IsSync = false,
+                        TryCount = 0,
+
+                    };
+                    identifiedSyncDevices.Add(identifiedSyncDevice);
+                }
+
+                context.IdentifiedSyncDeviceRepository.AddRange(identifiedSyncDevices);
+                await context.SaveChangesAsync();
+
+                #endregion
+
+                IProcess importPeople = new DeviceActionProcess(_configuration, deviceSynchronizer, ProcessPriority.Urgent);
+                await progressManager.AddProcess(importPeople);
+                return Ok(visitor);
             }
             catch (Exception ex)
             {
