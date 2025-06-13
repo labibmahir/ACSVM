@@ -161,7 +161,7 @@ namespace Api.BackGroundServices
                                                         };
                                                         synDevice.IsSync = false;
                                                         context.IdentifiedSyncDeviceRepository.Update(synDevice);
-                                                        context.DeviceLogRepository.Update(deviceLog);
+                                                        context.DeviceLogRepository.Add(deviceLog);
                                                         isSynceAllDevice = false;
 
                                                     }
