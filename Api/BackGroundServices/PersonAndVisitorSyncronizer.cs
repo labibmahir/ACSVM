@@ -128,6 +128,7 @@ namespace Api.BackGroundServices
                                                             Oid = Guid.NewGuid(),
                                                             VisitorId = deviceSynchronizer.VisitorId,
                                                             IsDeleted = false,
+                                                            DateCreated = DateTime.Now,
                                                             IsSync = false
                                                         };
                                                         synDevice.IsSync = false;
@@ -155,6 +156,7 @@ namespace Api.BackGroundServices
                                                             Oid = Guid.NewGuid(),
                                                             VisitorId = deviceSynchronizer.VisitorId,
                                                             IsDeleted = false,
+                                                            DateCreated=DateTime.Now,
                                                             IsSync = false
                                                         };
                                                         synDevice.IsSync = false;
@@ -187,6 +189,7 @@ namespace Api.BackGroundServices
                                                             Message = "Failed Delete Visitor Record",
                                                             Oid = Guid.NewGuid(),
                                                             VisitorId = deviceSynchronizer.VisitorId,
+                                                            DateCreated = DateTime.Now,
                                                             IsDeleted = false,
                                                             IsSync = false
                                                         };
@@ -214,6 +217,7 @@ namespace Api.BackGroundServices
                                                     Oid = Guid.NewGuid(),
                                                     VisitorId = deviceSynchronizer.VisitorId,
                                                     IsDeleted = false,
+                                                    DateCreated = DateTime.Now,
                                                     IsSync = false
                                                 };
                                                 synDevice.IsSync = false;
@@ -313,6 +317,7 @@ namespace Api.BackGroundServices
                                                             Message = "Failed Upadting person Record",
                                                             Oid = Guid.NewGuid(),
                                                             PersonId = deviceSynchronizer.PersonId,
+                                                            DateCreated = DateTime.Now,
                                                             IsDeleted = false,
                                                             IsSync = false
                                                         };
@@ -341,6 +346,7 @@ namespace Api.BackGroundServices
                                                             Oid = Guid.NewGuid(),
                                                             PersonId = deviceSynchronizer.PersonId,
                                                             IsDeleted = false,
+                                                            DateCreated = DateTime.Now,
                                                             IsSync = false
                                                         };
                                                         synDevice.IsSync = false;
@@ -374,6 +380,7 @@ namespace Api.BackGroundServices
                                                             Oid = Guid.NewGuid(),
                                                             PersonId = deviceSynchronizer.PersonId,
                                                             IsDeleted = false,
+                                                            DateCreated = DateTime.Now,
                                                             IsSync = false
                                                         };
                                                         synDevice.IsSync = false;
@@ -399,6 +406,7 @@ namespace Api.BackGroundServices
                                                     Message = "Device In Active",
                                                     Oid = Guid.NewGuid(),
                                                     PersonId = deviceSynchronizer.PersonId,
+                                                    DateCreated = DateTime.Now,
                                                     IsDeleted = false,
                                                     IsSync = false
                                                 };

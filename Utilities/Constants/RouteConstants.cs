@@ -193,5 +193,18 @@ namespace Utilities.Constants
         public const string DeletePersonAttendance = "attendance/person/delete";
         public const string DeleteVisitorAttendance = "attendance/visitor/delete";
         #endregion
+
+        #region DeviceLog
+        public const string ReadDeviceLogs = "device-logs";
+        public const string ReadDeviceLogsByDeviceId = "device-logs/{deviceId}";
+        public const string DeleteDeviceLogs = "device-logs-delete";
+
+        #endregion
+
+        #region VisitorLog
+        public const string ReadVisitHistoryByVisitorId = "visitor-history-by-visitor/{visitorId}";
+        public const string DeleteVisitorLog = "visitor-log-delete";
+
+        #endregion
     }
 }

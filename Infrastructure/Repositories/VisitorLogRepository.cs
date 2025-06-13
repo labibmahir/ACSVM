@@ -126,5 +126,30 @@ namespace Infrastructure.Repositories
             }
 
         }
+        public async Task<IEnumerable<VisitorLog>> GetVisitorAttendancesBetweenDates(DateTime StartDate, DateTime EndDate, Guid? visitorId, int? DeviceId)
+        {
+            try
+            {
+                var query = context.VisitorLogs.Include(v => v.Visitor).Include(d => d.Device).Where(x => x.IsDeleted == false
+              && (x.AuthenticationDate.HasValue && x.AuthenticationDate.Value.Date >= StartDate.Date && x.AuthenticationDate.Value.Date <= EndDate.Date)
+              ).AsQueryable();
+
+                if (visitorId.HasValue && visitorId.Value != Guid.Empty)
+                {
+                    query = query.Where(x => x.VisitorId == visitorId.Value);
+                }
+                if (DeviceId.HasValue && DeviceId.Value > 0)
+                {
+                    query = query.Where(x => x.DeviceId == DeviceId.Value);
+                }
+
+                return await query.ToListAsync();
+            }
+            catch
+            {
+                throw;
+            }
+
+        }
     }
 }

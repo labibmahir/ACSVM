@@ -19,20 +19,20 @@ namespace Api.BackGroundServices
     {
         private readonly ILogger<DataExchangeSyncronizer> _logger;
         private readonly IServiceProvider _serviceProvider;
-        //   private readonly IHubContext<NotificationsHub> _hubContext;
+        private readonly IHubContext<NotificationsHub> _hubContext;
         private static AttendanceNotificationAggrigator _attendanceAggrigator;
         private readonly string? _logDirectory;
         public DataExchangeSyncronizer(IConfiguration configuration,
             ILogger<DataExchangeSyncronizer> logger,
             IServiceProvider serviceProvider
-            // , IHubContext<NotificationsHub> hubContext
+             , IHubContext<NotificationsHub> hubContext
             )
         {
             _logger = logger;
             _logDirectory = configuration["ServiceLogFilePath:FileLogPath"];
             _serviceProvider = serviceProvider;
-            // _hubContext = hubContext;
-            ///_attendanceAggrigator = new AttendanceNotificationAggrigator(_hubContext);
+            _hubContext = hubContext;
+            _attendanceAggrigator = new AttendanceNotificationAggrigator(_hubContext);
 
         }
 
@@ -61,11 +61,12 @@ namespace Api.BackGroundServices
                             }
                             #region ACSEvent
                             // Processing ACS Event Data
-                            DateTime startTime = device.DateCreated ?? DateTime.Now; // Start from Jan 1, 2022
-                                                                                     //   DateTime startTime = DateTime.Now.AddDays(-2); // Start from Jan 1, 2022
-                                                                                     //DateTime startTime = DateTime.Now;
-                                                                                     // DateTime endTime = startTime.AddDays(1); // Process 1 day at a time
-                            DateTime endTime = startTime.AddDays(1); // Process 1 day at a time
+                            // DateTime startTime = device.DateCreated ?? DateTime.Now; // Start from Jan 1, 2022
+                            DateTime startTime = DateTime.Now.AddHours(-48); // Start from Jan 1, 2022
+                                                                             //   DateTime startTime = DateTime.Now.AddDays(-2); // Start from Jan 1, 2022
+                                                                             //DateTime startTime = DateTime.Now;
+                                                                             // DateTime endTime = startTime.AddDays(1); // Process 1 day at a time
+                            DateTime endTime = DateTime.Now; // Process 1 day at a time
 
                             while (startTime < DateTime.Now) // Continue until today
                             {
@@ -133,102 +134,144 @@ namespace Api.BackGroundServices
                                             //  WriteLogToFile($"check employee No Null");
                                             if (!string.IsNullOrEmpty(item.EmployeeNo))
                                             {
-                                                if (string.IsNullOrEmpty(insertQuery))
+                                                var getVisitorByVisitorNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
+                                                if (getVisitorByVisitorNumber == null)
                                                 {
-                                                    var personByEmployeeNo = await context.PersonRepository.FirstOrDefaultAsync(x => x.PersonNumber == item.EmployeeNo);
-                                                    var tabAttendance = await context.AttendanceRepository.FirstOrDefaultAsync(i =>
-                                                i.PersonId == personByEmployeeNo.Oid && i.AuthenticationDateAndTime == item.EventTime.DateTime);
 
-                                                    if (tabAttendance == null)
+                                                    if (string.IsNullOrEmpty(insertQuery))
                                                     {
+                                                        var personByEmployeeNo = await context.PersonRepository.FirstOrDefaultAsync(x => x.PersonNumber == item.EmployeeNo);
+                                                        var tabAttendance = await context.AttendanceRepository.FirstOrDefaultAsync(i =>
+                                                    i.PersonId == personByEmployeeNo.Oid && i.AuthenticationDateAndTime == item.EventTime.DateTime);
 
-                                                        Attendance accessControllEvent = new Attendance()
+                                                        if (tabAttendance == null)
                                                         {
-                                                            CardNo = item.CardReaderNo.ToString(),
-                                                            PersonId = personByEmployeeNo.Oid,
-                                                            AuthenticationDateAndTime = item.EventTime.DateTime,
-                                                            AuthenticationDate = item.EventTime.DateTime,
-                                                            AuthenticationTime = item.EventTime.TimeOfDay,
-                                                            Direction = null,
-                                                            DeviceName = device.DeviceName,
-                                                            DeviceSerialNo = device.DeviceIP,
-                                                        };
-                                                        var added = context.AttendanceRepository.Add(accessControllEvent);
 
-                                                        await context.SaveChangesAsync();
+                                                            Attendance accessControllEvent = new Attendance()
+                                                            {
+                                                                CardNo = item.CardReaderNo.ToString(),
+                                                                PersonId = personByEmployeeNo.Oid,
+                                                                AuthenticationDateAndTime = item.EventTime.DateTime,
+                                                                AuthenticationDate = item.EventTime.DateTime,
+                                                                AuthenticationTime = item.EventTime.TimeOfDay,
+                                                                Direction = null,
+                                                                DeviceName = device.DeviceName,
+                                                                DeviceSerialNo = device.DeviceIP,
+                                                            };
+                                                            var added = context.AttendanceRepository.Add(accessControllEvent);
+
+                                                            await context.SaveChangesAsync();
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        try
+                                                        {
+                                                            // WriteLogToFile("Inserting in to Client DB");
+
+                                                            authDateTimeFormat = dbTypes.ContainsKey("AuthenticationDateTime") && dbTypes["AuthenticationDateTime"] != 0
+                                                                ? dbTypes["AuthenticationDateTime"]
+                                                                : 0;
+
+                                                            authDateFormat = dbTypes.ContainsKey("AuthenticationDate") && dbTypes["AuthenticationDate"] != 0
+                                                                ? dbTypes["AuthenticationDate"]
+                                                                : 0;
+
+                                                            authTimeFormat = dbTypes.ContainsKey("AuthenticationTime") && dbTypes["AuthenticationTime"] != 0
+                                                                ? dbTypes["AuthenticationTime"]
+                                                            : 0;
+
+                                                            var person = context.PersonRepository.GetAll().FirstOrDefault(x => x.PersonNumber == item.EmployeeNo && x.IsDeleted == false);
+                                                            string duplicateCheckQuery = await GenerateSelectDuplicateQuery(config, _dbContextFactory);
+                                                            // var deviceFromDb = unitOfWork.AccessControllDeviceRepository.FirstOrDefault(x => x.IP == dto.ipAddress && x.IsRowDeleted == false);
+                                                            int checkRecord = 0;
+                                                            var paramValues = new DynamicParameters();
+                                                            foreach (var mapping in await GetClientFieldMappings(_dbContextFactory, config.Oid))
+                                                            {
+                                                                if (!string.IsNullOrEmpty(mapping.Value.ClientField) &&
+                                                                    (mapping.Value.StandardField == "employee" || mapping.Value.StandardField == "AuthenticationDateAndTime"))
+                                                                {
+                                                                    var standardField = mapping.Value.StandardField;
+                                                                    object value = standardField switch
+                                                                    {
+                                                                        "EmployeeNo" => item.EmployeeNo,
+                                                                        "AuthenticationDateAndTime" => item.EventTime.UtcDateTime,
+                                                                        _ => null
+                                                                    };
+
+                                                                    paramValues.Add(standardField, value);
+                                                                }
+                                                            }
+                                                            try
+                                                            {
+                                                                checkRecord = await dbConnection.QueryFirstAsync<int>(duplicateCheckQuery, paramValues);
+                                                            }
+                                                            catch (Exception ex)
+                                                            {
+                                                                // Log ex.Message
+                                                            }
+                                                            if (checkRecord == 0)
+                                                            {
+                                                                var rowsAffected = await dbConnection.ExecuteAsync(insertQuery, new
+                                                                {
+                                                                    EmployeeId = item.EmployeeNo,
+                                                                    AuthenticationDateTime = item.EventTime.UtcDateTime, //DateTimeOffset.Parse(dto.EventTime).ToOffset(TimeSpan.FromHours(6)).DateTime,
+                                                                                                                         // AuthenticationDateTime = DBMappingDateTimeConverter.ConvertDateTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateTimeFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
+                                                                    AuthenticationDate = item.EventTime.UtcDateTime.Date,
+                                                                    //AuthenticationDate = Convert.ToDateTime(dto.dateTime).Date, // DBMappingDateTimeConverter.ConvertDateFormat(Convert.ToDateTime(dto.dateTime), authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
+                                                                    AuthenticationTime = item.EventTime.UtcDateTime.TimeOfDay, //DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).TimeOfDay,
+                                                                                                                               // AuthenticationTime = DBMappingDateTimeConverter.ConvertTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
+                                                                    DeviceName = device.DeviceName,// dto?.Name ?? dto.AccessControllerEvent.deviceName,
+                                                                    DeviceSerialNo = device.SerialNumber,
+                                                                    PersonName = person == null ? "No Person Found" : (person.FirstName + ' ' + person.Surname),
+                                                                    CardNo = item.CardNo,// dto.AccessControllerEvent.GetFormattedCardNo(),
+                                                                    DepartmentName = "No Department Found",
+                                                                    FirstName = person?.FirstName ?? "No First Name Found",
+                                                                    LastName = person?.Surname ?? "No Last Name Found"
+                                                                });
+                                                            }
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            //                                                  WriteLogToFile($"Exception  : {ex.Message}");
+                                                        }
                                                     }
                                                 }
                                                 else
                                                 {
-                                                    try
+                                                    //this will handle visitor visits logs (visitor attendance)
+                                                    var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(getVisitorByVisitorNumber.Oid, item.EventTime.DateTime, item.EventTime.TimeOfDay);
+
+                                                    if (checkAppointment != null)
                                                     {
-                                                        // WriteLogToFile("Inserting in to Client DB");
 
-                                                        authDateTimeFormat = dbTypes.ContainsKey("AuthenticationDateTime") && dbTypes["AuthenticationDateTime"] != 0
-                                                            ? dbTypes["AuthenticationDateTime"]
-                                                            : 0;
+                                                        var assignAppointment = await context.IdentifiedAssignedAppointmentRepository.GetIdentifiedAssignedAppointmentByAppointment(checkAppointment.Oid);
+                                                        await _attendanceAggrigator.SendAppointmentNotification(getVisitorByVisitorNumber, assignAppointment.Select(x => x.PersonId).ToList());
 
-                                                        authDateFormat = dbTypes.ContainsKey("AuthenticationDate") && dbTypes["AuthenticationDate"] != 0
-                                                            ? dbTypes["AuthenticationDate"]
-                                                            : 0;
-
-                                                        authTimeFormat = dbTypes.ContainsKey("AuthenticationTime") && dbTypes["AuthenticationTime"] != 0
-                                                            ? dbTypes["AuthenticationTime"]
-                                                        : 0;
-
-                                                        var person = context.PersonRepository.GetAll().FirstOrDefault(x => x.PersonNumber == item.EmployeeNo && x.IsDeleted == false);
-                                                        string duplicateCheckQuery = await GenerateSelectDuplicateQuery(config, _dbContextFactory);
-                                                        // var deviceFromDb = unitOfWork.AccessControllDeviceRepository.FirstOrDefault(x => x.IP == dto.ipAddress && x.IsRowDeleted == false);
-                                                        int checkRecord = 0;
-                                                        var paramValues = new DynamicParameters();
-                                                        foreach (var mapping in await GetClientFieldMappings(_dbContextFactory, config.Oid))
-                                                        {
-                                                            if (!string.IsNullOrEmpty(mapping.Value.ClientField) &&
-                                                                (mapping.Value.StandardField == "employee" || mapping.Value.StandardField == "AuthenticationDateAndTime"))
-                                                            {
-                                                                var standardField = mapping.Value.StandardField;
-                                                                object value = standardField switch
-                                                                {
-                                                                    "EmployeeNo" => item.EmployeeNo,
-                                                                    "AuthenticationDateAndTime" => item.EventTime.UtcDateTime,
-                                                                    _ => null
-                                                                };
-
-                                                                paramValues.Add(standardField, value);
-                                                            }
-                                                        }
-                                                        try
-                                                        {
-                                                            checkRecord = await dbConnection.QueryFirstAsync<int>(duplicateCheckQuery, paramValues);
-                                                        }
-                                                        catch (Exception ex)
-                                                        {
-                                                            // Log ex.Message
-                                                        }
-                                                        if (checkRecord == 0)
-                                                        {
-                                                            var rowsAffected = await dbConnection.ExecuteAsync(insertQuery, new
-                                                            {
-                                                                EmployeeId = item.EmployeeNo,
-                                                                AuthenticationDateTime = item.EventTime.UtcDateTime, //DateTimeOffset.Parse(dto.EventTime).ToOffset(TimeSpan.FromHours(6)).DateTime,
-                                                                                                                     // AuthenticationDateTime = DBMappingDateTimeConverter.ConvertDateTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateTimeFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
-                                                                AuthenticationDate = item.EventTime.UtcDateTime.Date,
-                                                                //AuthenticationDate = Convert.ToDateTime(dto.dateTime).Date, // DBMappingDateTimeConverter.ConvertDateFormat(Convert.ToDateTime(dto.dateTime), authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
-                                                                AuthenticationTime = item.EventTime.UtcDateTime.TimeOfDay, //DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).TimeOfDay,
-                                                                                                                           // AuthenticationTime = DBMappingDateTimeConverter.ConvertTimeFormat(DateTimeOffset.Parse(dto.dateTime).ToOffset(TimeSpan.FromHours(6)).DateTime, authDateFormat, config == null ? DatabaseType.SQLServer : config.DatabaseType),
-                                                                DeviceName = device.DeviceName,// dto?.Name ?? dto.AccessControllerEvent.deviceName,
-                                                                DeviceSerialNo = device.SerialNumber,
-                                                                PersonName = person == null ? "No Person Found" : (person.FirstName + ' ' + person.Surname),
-                                                                CardNo = item.CardNo,// dto.AccessControllerEvent.GetFormattedCardNo(),
-                                                                DepartmentName = "No Department Found",
-                                                                FirstName = person?.FirstName ?? "No First Name Found",
-                                                                LastName = person?.Surname ?? "No Last Name Found"
-                                                            });
-                                                        }
                                                     }
-                                                    catch (Exception ex)
+                                                    var visitorLogInDb = await context.VisitorLogRepository.FirstOrDefaultAsync(x => x.VisitorId == getVisitorByVisitorNumber.Oid
+                                                    && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
+                                                    );
+
+                                                    if (visitorLogInDb == null)
                                                     {
-                                                        //                                                  WriteLogToFile($"Exception  : {ex.Message}");
+                                                        VisitorLog visitorLog = new VisitorLog()
+                                                        {
+                                                            CardNo = item.CardReaderNo.ToString(),
+                                                            // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
+                                                            VisitorId = getVisitorByVisitorNumber.Oid,
+                                                            AuthenticationDateAndTime = item.EventTime.DateTime,
+                                                            AuthenticationDate = item.EventTime.DateTime,
+                                                            AuthenticationTime = item.EventTime.TimeOfDay,
+                                                            DeviceId = device.Oid,
+                                                            DateCreated = DateTime.Now,
+                                                            IsDeleted = false,
+
+
+                                                        };
+
+                                                        context.VisitorLogRepository.Add(visitorLog);
+                                                        await context.SaveChangesAsync();
                                                     }
                                                 }
                                             }

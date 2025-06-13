@@ -60,188 +60,191 @@ namespace Api.BackGroundServices
                             context.DeviceRepository.Update(device);
                             await context.SaveChangesAsync();
 
-                            #region ACSEvent
+                            //Now ACSEvents will be handled from DataExchangeSyncronizer
+                            //#region ACSEvent
 
-                            // Processing ACS Event Data
-                            DateTime startTime = DateTime.Now.AddHours(-48);
-                            DateTime endTime = DateTime.Now;// startTime.AddMinutes(1);
+                            //// Processing ACS Event Data
+                            //DateTime startTime = DateTime.Now.AddHours(-48);
+                            //DateTime endTime = DateTime.Now;// startTime.AddMinutes(1);
 
-                            while (startTime.TimeOfDay < DateTime.Now.TimeOfDay) // Continue until today
-                            {
-                                try
-                                {
-                                    //  WriteLogToFile($"{device.IP}");
-                                    int acsEventCount = await visionMachineService.GetAcsEventCount(device, startTime, endTime);
-                                    var acsEventInfo = new List<Info>();
+                            //while (startTime < DateTime.Now) // Continue until today
+                            //{
+                            //    try
+                            //    {
+                            //        //  WriteLogToFile($"{device.IP}");
+                            //        int acsEventCount = await visionMachineService.GetAcsEventCount(device, startTime, endTime);
+                            //        var acsEventInfo = new List<Info>();
 
-                                    int acsEventLastIndex = 0;
+                            //        int acsEventLastIndex = 0;
 
-                                    while (acsEventInfo.Count < acsEventCount)
-                                    {
-                                        try
-                                        {
-                                            var result = await visionMachineService.GetAcsEvent(device, startTime, endTime, acsEventLastIndex, 20);
+                            //        while (acsEventInfo.Count < acsEventCount)
+                            //        {
+                            //            try
+                            //            {
+                            //                var result = await visionMachineService.GetAcsEvent(device, startTime, endTime, acsEventLastIndex, 20);
 
-                                            if (result?.AcsEvent != null && result.AcsEvent.InfoList.Any())
-                                            {
-                                                acsEventInfo.AddRange(result.AcsEvent.InfoList);
-                                                acsEventLastIndex += result.AcsEvent.InfoList.Count;
-                                            }
+                            //                if (result?.AcsEvent != null && result.AcsEvent.InfoList.Any())
+                            //                {
+                            //                    acsEventInfo.AddRange(result.AcsEvent.InfoList);
+                            //                    acsEventLastIndex += result.AcsEvent.InfoList.Count;
+                            //                }
 
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            _logger.LogError(ex, "Error fetching ACS events for device {DeviceId} on {StartTime}",
-                                                device.Oid, startTime);
-                                        }
-                                    }
+                            //            }
+                            //            catch (Exception ex)
+                            //            {
+                            //                _logger.LogError(ex, "Error fetching ACS events for device {DeviceId} on {StartTime}",
+                            //                    device.Oid, startTime);
+                            //            }
+                            //        }
 
-                                    try
-                                    {
-                                        int authDateTimeFormat = 0;
-                                        int authDateFormat = 0;
-                                        int authTimeFormat = 0;
-                                        foreach (var item in acsEventInfo)
-                                        {
-                                            //  WriteLogToFile($"check employee No Null");
-                                            if (!string.IsNullOrEmpty(item.EmployeeNo))
-                                            {
+                            //        try
+                            //        {
+                            //            int authDateTimeFormat = 0;
+                            //            int authDateFormat = 0;
+                            //            int authTimeFormat = 0;
+                            //            foreach (var item in acsEventInfo)
+                            //            {
+                            //                //  WriteLogToFile($"check employee No Null");
+                            //                if (!string.IsNullOrEmpty(item.EmployeeNo))
+                            //                {
 
-                                                try
-                                                {
-                                                    var oneMinuteAgo = DateTime.Now.AddMinutes(-1);
-                                                    var now = DateTime.Now;
+                            //                    try
+                            //                    {
+                            //                        var oneMinuteAgo = DateTime.Now.AddMinutes(-1);
+                            //                        var now = DateTime.Now;
 
-                                                    Person? getPersonByPersonNumber = new Person();
-                                                    Visitor? getVisitorByVisitorNumber = new Visitor();
-                                                    getPersonByPersonNumber = await context.PersonRepository.GetPersonByPersonNumber(item.EmployeeNo);
-                                                    if (getPersonByPersonNumber == null)
-                                                    {
-                                                        getVisitorByVisitorNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
-                                                    }
-                                                    Attendance recentAttendance = null; ;
-                                                    if (getPersonByPersonNumber != null)
-                                                    {
-                                                        //    recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByPersonNumber(oneMinuteAgo, now, getPersonByPersonNumber.PersonNumber);
-                                                        recentAttendance = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
-                                          && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
-                                          );
+                            //                        //Person? getPersonByPersonNumber = new Person();
+                            //                        Visitor? getVisitorByVisitorNumber = new Visitor();
+                            //                        //getPersonByPersonNumber = await context.PersonRepository.GetPersonByPersonNumber(item.EmployeeNo);
+                            //                        //if (getPersonByPersonNumber == null)
+                            //                        //{
+                            //                        //    getVisitorByVisitorNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
+                            //                        //}
+                            //                        getVisitorByVisitorNumber = await context.VisitorRepository.GetVisitorByVisitorNumber(item.EmployeeNo);
+                            //                        //Person Attendance will be managedFrom DataExchangeSynocronizer
+                            //                        //          Attendance recentAttendance = null; ;
+                            //                        //          if (getPersonByPersonNumber != null)
+                            //                        //          {
+                            //                        //              //    recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByPersonNumber(oneMinuteAgo, now, getPersonByPersonNumber.PersonNumber);
+                            //                        //              recentAttendance = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
+                            //                        //&& x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
+                            //                        //);
 
-                                                        //else if (getVisitorByPersonNumber != null)
-                                                        //            recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByVisitorNumber(oneMinuteAgo, now, getVisitorByPersonNumber.VisitorNumber);
+                            //                        //              //else if (getVisitorByPersonNumber != null)
+                            //                        //              //            recentAttendance = await context.AttendanceRepository.GetAttendanceBetweenDateAndTimeByVisitorNumber(oneMinuteAgo, now, getVisitorByPersonNumber.VisitorNumber);
 
-                                                        if (recentAttendance == null)
-                                                        {
-                                                            AlarmInfo alarmInfo = new AlarmInfo()
-                                                            {
-                                                                dateTime = item.EventTime.ToString(),
-                                                                eventType = "AccessControllEvent",
-                                                                ipAddress = device.DeviceIP,
-                                                                eventDescription = "Access Controll Event",
-                                                                eventState = "",
-                                                                ipv6Address = "",
-                                                                activePostCount = 0,
-                                                                channelID = "",
-                                                                AccessControllerEvent = new AccessControllerEvent()
-                                                                {
-                                                                    employeeNoString = item.EmployeeNo,
-                                                                    name = "",
-                                                                    deviceName = "",
-                                                                    userType = item.UserType,
-                                                                    serialNo = 0,
-                                                                    cardType = int.TryParse(item.CardType.ToString(), out int result) ? result : 0,
-                                                                    accessChannel = 0
-                                                                }
-                                                            };
-                                                            alarmInfo.Device = device;
-                                                            await _attendanceAggrigator.SendAccessControllEventNotification(alarmInfo);
+                            //                        //              if (recentAttendance == null)
+                            //                        //              {
+                            //                        //                  AlarmInfo alarmInfo = new AlarmInfo()
+                            //                        //                  {
+                            //                        //                      dateTime = item.EventTime.ToString(),
+                            //                        //                      eventType = "AccessControllEvent",
+                            //                        //                      ipAddress = device.DeviceIP,
+                            //                        //                      eventDescription = "Access Controll Event",
+                            //                        //                      eventState = "",
+                            //                        //                      ipv6Address = "",
+                            //                        //                      activePostCount = 0,
+                            //                        //                      channelID = "",
+                            //                        //                      AccessControllerEvent = new AccessControllerEvent()
+                            //                        //                      {
+                            //                        //                          employeeNoString = item.EmployeeNo,
+                            //                        //                          name = "",
+                            //                        //                          deviceName = "",
+                            //                        //                          userType = item.UserType,
+                            //                        //                          serialNo = 0,
+                            //                        //                          cardType = int.TryParse(item.CardType.ToString(), out int result) ? result : 0,
+                            //                        //                          accessChannel = 0
+                            //                        //                      }
+                            //                        //                  };
+                            //                        //                  alarmInfo.Device = device;
+                            //                        //                  await _attendanceAggrigator.SendAccessControllEventNotification(alarmInfo);
 
-                                                            var accessControllEventInDb = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
-                                                            && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
-                                                            );
+                            //                        //                  var accessControllEventInDb = await context.AttendanceRepository.FirstOrDefaultAsync(x => x.PersonId == getPersonByPersonNumber.Oid
+                            //                        //                  && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
+                            //                        //                  );
 
-                                                            if (accessControllEventInDb == null)
-                                                            {
-                                                                Attendance accessControllEvent = new Attendance()
-                                                                {
-                                                                    CardNo = item.CardReaderNo.ToString(),
-                                                                    // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
-                                                                    PersonId = getPersonByPersonNumber.Oid,
-                                                                    AuthenticationDateAndTime = item.EventTime.DateTime,
-                                                                    AuthenticationDate = item.EventTime.DateTime,
-                                                                    AuthenticationTime = item.EventTime.TimeOfDay,
-                                                                    DeviceId = device.Oid,
-                                                                    DateCreated = DateTime.Now,
-                                                                    IsDeleted = false
+                            //                        //                  if (accessControllEventInDb == null)
+                            //                        //                  {
+                            //                        //                      Attendance accessControllEvent = new Attendance()
+                            //                        //                      {
+                            //                        //                          CardNo = item.CardReaderNo.ToString(),
+                            //                        //                          // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
+                            //                        //                          PersonId = getPersonByPersonNumber.Oid,
+                            //                        //                          AuthenticationDateAndTime = item.EventTime.DateTime,
+                            //                        //                          AuthenticationDate = item.EventTime.DateTime,
+                            //                        //                          AuthenticationTime = item.EventTime.TimeOfDay,
+                            //                        //                          DeviceId = device.Oid,
+                            //                        //                          DateCreated = DateTime.Now,
+                            //                        //                          IsDeleted = false
 
-                                                                };
-                                                                var added = context.AttendanceRepository.Add(accessControllEvent);
+                            //                        //                      };
+                            //                        //                      var added = context.AttendanceRepository.Add(accessControllEvent);
 
-                                                                await context.SaveChangesAsync();
-                                                            }
-                                                        }
-                                                    }
-                                                    else if (getVisitorByVisitorNumber != null)
-                                                    {
-                                                        var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(getVisitorByVisitorNumber.Oid, item.EventTime.DateTime, item.EventTime.TimeOfDay);
+                            //                        //                      await context.SaveChangesAsync();
+                            //                        //                  }
+                            //                        //              }
+                            //                        //          }
+                            //                        if (getVisitorByVisitorNumber != null)
+                            //                        {
+                            //                            var checkAppointment = await context.AppointmentRepository.GetActiveAppointmentByVisitorAppointmentDateAndTime(getVisitorByVisitorNumber.Oid, item.EventTime.DateTime, item.EventTime.TimeOfDay);
 
-                                                        if (checkAppointment != null)
-                                                        {
+                            //                            if (checkAppointment != null)
+                            //                            {
 
-                                                            var assignAppointment = await context.IdentifiedAssignedAppointmentRepository.GetIdentifiedAssignedAppointmentByAppointment(checkAppointment.Oid);
-                                                            await _attendanceAggrigator.SendAppointmentNotification(getVisitorByVisitorNumber, assignAppointment.Select(x => x.PersonId).ToList());
+                            //                                var assignAppointment = await context.IdentifiedAssignedAppointmentRepository.GetIdentifiedAssignedAppointmentByAppointment(checkAppointment.Oid);
+                            //                                await _attendanceAggrigator.SendAppointmentNotification(getVisitorByVisitorNumber, assignAppointment.Select(x => x.PersonId).ToList());
 
-                                                        }
-                                                        var visitorLogInDb = await context.VisitorLogRepository.FirstOrDefaultAsync(x => x.VisitorId == getVisitorByVisitorNumber.Oid
-                                                        && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
-                                                        );
+                            //                            }
+                            //                            var visitorLogInDb = await context.VisitorLogRepository.FirstOrDefaultAsync(x => x.VisitorId == getVisitorByVisitorNumber.Oid
+                            //                            && x.AuthenticationDateAndTime == item.EventTime.DateTime && x.AuthenticationDate == item.EventTime.DateTime && x.AuthenticationTime == item.EventTime.TimeOfDay
+                            //                            );
 
-                                                        if (visitorLogInDb == null)
-                                                        {
-                                                            VisitorLog visitorLog = new VisitorLog()
-                                                            {
-                                                                CardNo = item.CardReaderNo.ToString(),
-                                                                // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
-                                                                VisitorId = getVisitorByVisitorNumber.Oid,
-                                                                AuthenticationDateAndTime = item.EventTime.DateTime,
-                                                                AuthenticationDate = item.EventTime.DateTime,
-                                                                AuthenticationTime = item.EventTime.TimeOfDay,
-                                                                DeviceId = device.Oid,
-                                                                DateCreated = DateTime.Now,
-                                                                IsDeleted = false,
-
-
-                                                            };
-
-                                                            context.VisitorLogRepository.Add(visitorLog);
-                                                            await context.SaveChangesAsync();
-                                                        }
-                                                    }
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                }
-
-                                            }
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        // WriteLogToFile($"Exception  : {ex.Message}");
-                                    }
-                                    // Move to the next day
-                                    //startTime = startTime.AddDays(1);
-                                    //endTime = startTime.AddDays(1);
+                            //                            if (visitorLogInDb == null)
+                            //                            {
+                            //                                VisitorLog visitorLog = new VisitorLog()
+                            //                                {
+                            //                                    CardNo = item.CardReaderNo.ToString(),
+                            //                                    // VisitorId = getVisitorByPersonNumber == null ? null : getVisitorByPersonNumber.Oid,
+                            //                                    VisitorId = getVisitorByVisitorNumber.Oid,
+                            //                                    AuthenticationDateAndTime = item.EventTime.DateTime,
+                            //                                    AuthenticationDate = item.EventTime.DateTime,
+                            //                                    AuthenticationTime = item.EventTime.TimeOfDay,
+                            //                                    DeviceId = device.Oid,
+                            //                                    DateCreated = DateTime.Now,
+                            //                                    IsDeleted = false,
 
 
+                            //                                };
 
-                                }
-                                catch (Exception ex)
-                                {
+                            //                                context.VisitorLogRepository.Add(visitorLog);
+                            //                                await context.SaveChangesAsync();
+                            //                            }
+                            //                        }
+                            //                    }
+                            //                    catch (Exception ex)
+                            //                    {
+                            //                    }
 
-                                }
-                            }
-                            #endregion
+                            //                }
+                            //            }
+                            //        }
+                            //        catch (Exception ex)
+                            //        {
+                            //            // WriteLogToFile($"Exception  : {ex.Message}");
+                            //        }
+                            //        // Move to the next day
+                            //        //startTime = startTime.AddDays(1);
+                            //        //endTime = startTime.AddDays(1);
+
+
+
+                            //    }
+                            //    catch (Exception ex)
+                            //    {
+
+                            //    }
+                            //}
+                            //#endregion
 
                         }
                         #region Visitor CardAssignment
@@ -329,7 +332,7 @@ namespace Api.BackGroundServices
 
                         #endregion
 
-                  
+
 
                     }
 
