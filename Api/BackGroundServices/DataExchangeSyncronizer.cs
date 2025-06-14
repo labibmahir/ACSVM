@@ -189,13 +189,26 @@ namespace Api.BackGroundServices
                                                             foreach (var mapping in await GetClientFieldMappings(_dbContextFactory, config.Oid))
                                                             {
                                                                 if (!string.IsNullOrEmpty(mapping.Value.ClientField) &&
-                                                                    (mapping.Value.StandardField == "employee" || mapping.Value.StandardField == "AuthenticationDateAndTime"))
+                                                                    (mapping.Value.StandardField.ToLower() == "employeeid" || mapping.Value.StandardField.ToLower() == "employeeno"
+                                                                    || mapping.Value.StandardField.ToLower() == "authenticationdateandtime") || mapping.Value.StandardField.ToLower() == "authenticationdatetime" || mapping.Value.StandardField.ToLower() == "eventtime" || mapping.Value.StandardField.ToLower() == "eventdateandtime")
                                                                 {
-                                                                    var standardField = mapping.Value.StandardField;
+                                                                    var noSecondDateTime = new DateTime(
+    item.EventTime.UtcDateTime.Year,
+    item.EventTime.UtcDateTime.Month,
+    item.EventTime.UtcDateTime.Day,
+    item.EventTime.UtcDateTime.Hour,
+    item.EventTime.UtcDateTime.Minute,
+    0 // seconds set to 00
+);
+                                                                    var standardField = mapping.Value.StandardField.ToLower();
                                                                     object value = standardField switch
                                                                     {
-                                                                        "EmployeeNo" => item.EmployeeNo,
-                                                                        "AuthenticationDateAndTime" => item.EventTime.UtcDateTime,
+                                                                        "employeeno" => item.EmployeeNo,
+                                                                        "employeeid" => item.EmployeeNo,
+                                                                        "authenticationdateandtime" => RoundToSmalldatetime(item.EventTime.UtcDateTime),
+                                                                        "authenticationdatetime" => RoundToSmalldatetime(item.EventTime.UtcDateTime),
+                                                                        "eventtime" => RoundToSmalldatetime(item.EventTime.UtcDateTime),
+                                                                        "eventdateandtime" => RoundToSmalldatetime(item.EventTime.UtcDateTime),
                                                                         _ => null
                                                                     };
 
@@ -282,8 +295,8 @@ namespace Api.BackGroundServices
                                         //                                    WriteLogToFile($"Exception  : {ex.Message}");
                                     }
                                     // Move to the next day
-                                    startTime = startTime.AddDays(1);
-                                    endTime = startTime.AddDays(1);
+                                    //startTime = startTime.AddDays(1);
+                                    //endTime = startTime.AddDays(1);
                                 }
                                 catch (Exception ex)
                                 {
@@ -355,7 +368,7 @@ namespace Api.BackGroundServices
                                                                     .ToDictionary(f => f.StandardField!, f => f.FormatType ?? 1);
 
             // Ensure required keys exist with a default value of 1
-            foreach (var key in new[] { "AuthenticationDateTime", "AuthenticationDate", "AuthenticationTime" })
+            foreach (var key in new[] { "AuthenticationDateTime", "AuthenticationDateAndTime", "EventTime", "EventDateAndTime", "AuthenticationDate", "AuthenticationDate", "AuthenticationTime" })
             {
                 dbTypes.TryAdd(key, 1);
             }
@@ -426,10 +439,10 @@ namespace Api.BackGroundServices
             if (fieldMappings == null || !fieldMappings.Any())
                 return null;
 
-            var duplicateCheckFields = new[] { "EmployeeNo", "AuthenticationDateTime" };
+            var duplicateCheckFields = new[] { "employeeno", "employeeid", "authenticationdatetime", "authenticationdateandtime", "eventtime", "eventdateandtime" };
 
             var validMappings = fieldMappings.Values
-                .Where(f => !string.IsNullOrEmpty(f.ClientField) && duplicateCheckFields.Contains(f.StandardField))
+                .Where(f => !string.IsNullOrEmpty(f.ClientField) && duplicateCheckFields.Contains(f.StandardField?.ToLower()))
                 .ToList();
 
 
@@ -491,6 +504,16 @@ namespace Api.BackGroundServices
             {
                 return false;
             }
+        }
+        private DateTime RoundToSmalldatetime(DateTime dt)
+        {
+            var seconds = dt.Second;
+            dt = dt.AddSeconds(-seconds); // remove seconds
+            if (seconds >= 30)
+            {
+                dt = dt.AddMinutes(1);
+            }
+            return dt;
         }
     }
 }

@@ -378,14 +378,14 @@ namespace Infrastructure.Repositories
         /// <param name="filter"></param>
         /// <param name="expressionList"></param>
         /// <returns></returns>
-        public int Count(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] expressionList)
+        public async Task<int> CountAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] expressionList)
         {
             foreach (var expression in expressionList)
             {
                 context.Set<T>().Include(expression);
             }
 
-            return context.Set<T>().Where(filter).Count();
+            return await context.Set<T>().Where(filter).CountAsync();
         }
 
         /// <summary>

@@ -151,7 +151,7 @@ namespace Infrastructure.Contracts
         /// <param name="filter"></param>
         /// <param name="expressionList"></param>
         /// <returns></returns>
-        int Count(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] expressionList);
+        Task<int> CountAsync(Expression<Func<T, bool>> filter, params Expression<Func<T, object>>[] expressionList);
         
         /// <summary>
         /// 

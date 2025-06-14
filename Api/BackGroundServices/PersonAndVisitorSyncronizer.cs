@@ -156,7 +156,7 @@ namespace Api.BackGroundServices
                                                             Oid = Guid.NewGuid(),
                                                             VisitorId = deviceSynchronizer.VisitorId,
                                                             IsDeleted = false,
-                                                            DateCreated=DateTime.Now,
+                                                            DateCreated = DateTime.Now,
                                                             IsSync = false
                                                         };
                                                         synDevice.IsSync = false;
@@ -232,6 +232,7 @@ namespace Api.BackGroundServices
                                     }
                                 }
                             }
+
                         }
                         catch (Exception ex)
                         {
@@ -428,7 +429,28 @@ namespace Api.BackGroundServices
 
                         }
                         #endregion
+                        #region Deleteing DeviceSync Records
+                        try
+                        {
+                            var deviceSyncToDelete = await context.DeviceSynchronizerRepository.QueryAsync(x => x.IsDeleted == false && x.IsSync == true);
+                            foreach (var deviceSynchronizer in deviceSyncToDelete)
+                            {
+                                var identifiedSynDevices = await context.IdentifiedSyncDeviceRepository.QueryAsync(x => x.IsDeleted == false && x.IsSync == true && x.DeviceSynchronizerId == deviceSynchronizer.Oid && x.TryCount <= 50);
+                                foreach (var item in identifiedSynDevices)
+                                {
+                                    context.IdentifiedSyncDeviceRepository.Delete(item);
+                                }
+                                await context.SaveChangesAsync();
+                                context.DeviceSynchronizerRepository.Delete(deviceSynchronizer);
+                                await context.SaveChangesAsync();
+                            }
+                        }
+                        catch
+                        {
 
+                        }
+
+                        #endregion
                     }
 
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);

@@ -206,5 +206,9 @@ namespace Utilities.Constants
         public const string DeleteVisitorLog = "visitor-log-delete";
 
         #endregion
+        #region Dashboard
+        public const string ReadDashboardData = "dashboard-data"; 
+
+        #endregion
     }
 }
